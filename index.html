@@ -420,6 +420,7 @@ const NET = {
   role: JOIN ? 'player' : 'home', room: JOIN || null, // 'home' = pantalla de inicio status:'off', peer:null,
   conns:new Map(), // anfitrión: pid → conexión
   conn:null, everConnected:false, retryId:null, tries:0, // jugador
+  stage:'server', fails:0, lastErr:'', // jugador: en qué paso de la conexión está y por qué falló
   pid:null, name:'',
 };
 const isHost = () => NET.role === 'host';
@@ -428,11 +429,16 @@ const joinURL = code => location.origin + location.pathname + '?sala=' + code +
   (PARAMS.get('servidor') ? '&servidor=' + encodeURIComponent(PARAMS.get('servidor')) : '');
 
 // Servidor PeerJS propio opcional: ?servidor=host:puerto (por defecto, el servidor público de PeerJS).
+// Servidores para atravesar routers: STUN (descubrir la dirección pública) y TURN de PeerJS (reenviar si no hay conexión directa).
+const ICE = {iceServers:[
+  {urls:['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478']},
+  {urls:['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username:'peerjs', credential:'peerjsp'},
+]};
 function peerOptions() {
   const srv = PARAMS.get('servidor');
-  if (!srv) return {};
+  if (!srv) return {config:ICE};
   const [host, port] = srv.split(':');
-  return {host, port:+port || (location.protocol === 'https:' ? 443 : 80), path:'/', secure:location.protocol === 'https:'};
+  return {config:ICE, host, port:+port || (location.protocol === 'https:' ? 443 : 80), path:'/', secure:location.protocol === 'https:'};
 }
 const scripts = {};
 function loadScript(src) {
@@ -523,22 +529,37 @@ async function joinRoom() {
   if (NET.status !== 'open') NET.status = 'connecting';
   render();
   try { await loadScript(PEERJS_URL); } catch { NET.status = 'error'; render(); return retryJoin(); }
+  NET.stage = 'server';
   const peer = NET.peer = new Peer(peerOptions());
   peer.on('open', connectToHost);
   peer.on('error', err => {
     if (NET.peer !== peer) return;
+    NET.lastErr = err.type;
     NET.status = err.type === 'peer-unavailable' && !NET.everConnected ? 'missing' : 'lost';
+    if (err.type === 'peer-unavailable') NET.stage = 'server';
     render(); retryJoin();
   });
 }
 function connectToHost() {
-  const conn = NET.conn = NET.peer.connect(PEER_PREFIX + NET.room, {reliable:true});
+  NET.stage = 'direct'; render();
+  const conn = NET.conn = NET.peer.connect(PEER_PREFIX + NET.room, {reliable:true, serialization:'json'});
+  const failed = why => {
+    if (NET.conn !== conn) return;
+    NET.conn = null;
+    if (!conn.open) { NET.fails++; NET.lastErr = why || NET.lastErr; }
+    NET.status = 'lost'; render(); retryJoin();
+    conn.close();
+  };
+  // Si la conexión directa no llega a abrirse (red que la bloquea), se corta y se vuelve a intentar.
+  const timeout = setTimeout(() => { if (!conn.open) failed('timeout'); }, 15000);
   conn.on('open', () => {
-    NET.status = 'open'; NET.everConnected = true;
+    clearTimeout(timeout);
+    NET.status = 'open'; NET.everConnected = true; NET.fails = 0; NET.lastErr = '';
     conn.send({t:'hello', pid:NET.pid, name:NET.name});
   });
   conn.on('data', msg => { if (NET.conn === conn && msg && msg.t === 'state') applyState(msg.S); });
-  conn.on('close', () => { if (NET.conn === conn) { NET.status = 'lost'; render(); retryJoin(); } });
+  conn.on('error', err => { NET.lastErr = err.type || 'error'; });
+  conn.on('close', () => { clearTimeout(timeout); failed(); });
 }
 function retryJoin() {
   clearTimeout(NET.retryId);
@@ -688,7 +709,10 @@ function renderHub() {
   const hub = $('hub');
   if (!isHost() && NET.status !== 'open' && !NET.everConnected) {
     const txt = NET.status === 'missing' ? 'No encuentro esta sala. Revisa el código o espera a que el profe abra la partida.'
-      : NET.status === 'error' ? 'No se pudo conectar. Revisa la conexión a internet.' : 'Conectando…';
+      : NET.status === 'error' ? 'No se pudo cargar el juego en red. Revisa la conexión a internet.'
+      : NET.stage === 'server' ? 'Conectando con el servidor…'
+      : NET.fails < 2 ? 'Conectando con el ordenador de la partida…'
+      : `No consigo conectar con el ordenador de la partida. Puede ser la red (wifi del centro, VPN) o el navegador. Sigo intentándolo… (${NET.fails} intentos, ${NET.lastErr || 'sin respuesta'})`;
     hub.innerHTML = `<div class="label">Sala</div><div class="who">${esc(NET.room)}</div><div class="msg">${txt}</div>`;
     return;
   }
