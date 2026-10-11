@@ -419,6 +419,7 @@ const JOIN = cleanCode(PARAMS.get('sala'));
 const NET = {
   role: JOIN ? 'player' : 'home', room: JOIN || null, // 'home' = pantalla de inicio status:'off', peer:null,
   conns:new Map(), // anfitrión: pid → conexión
+  pending:new Set(), // anfitrión: conexiones que están llegando pero aún no se han abierto
   conn:null, everConnected:false, retryId:null, tries:0, // jugador
   stage:'server', fails:0, lastErr:'', // jugador: en qué paso de la conexión está y por qué falló
   pid:null, name:'',
@@ -473,6 +474,10 @@ async function openRoom() {
   });
 }
 function hostConn(conn) {
+  NET.pending.add(conn); renderRoom();
+  const settle = () => { if (NET.pending.delete(conn) && S && isHost()) renderRoom(); };
+  conn.on('open', settle);
+  setTimeout(settle, 20000);
   conn.on('data', msg => {
     if (!msg || typeof msg !== 'object') return;
     if (msg.t === 'hello' && typeof msg.pid === 'string' && msg.pid.length <= 40) {
@@ -495,6 +500,7 @@ function hostConn(conn) {
     }
   });
   conn.on('close', () => {
+    settle();
     if (!S || NET.leaving || !conn.pid || NET.conns.get(conn.pid) !== conn) return;
     NET.conns.delete(conn.pid);
     if (S.phase === 'setup') S.players = S.players.filter(p => p.pid !== conn.pid);
@@ -543,10 +549,14 @@ async function joinRoom() {
 function connectToHost() {
   NET.stage = 'direct'; render();
   const conn = NET.conn = NET.peer.connect(PEER_PREFIX + NET.room, {reliable:true, serialization:'json'});
+  // Diagnóstico: qué tipos de candidatos de red se encuentran y si el ordenador de la partida llega a contestar.
+  const pc = conn.peerConnection, kinds = new Set();
+  if (pc) pc.addEventListener('icecandidate', e => { if (e.candidate) kinds.add(e.candidate.type || 'otro'); });
+  const diag = () => pc ? ` · respuesta: ${pc.signalingState === 'stable' ? 'sí' : 'no'} · ICE: ${pc.iceConnectionState} · red: ${[...kinds].join('+') || 'ninguna'}` : '';
   const failed = why => {
     if (NET.conn !== conn) return;
     NET.conn = null;
-    if (!conn.open) { NET.fails++; NET.lastErr = why || NET.lastErr; }
+    if (!conn.open) { NET.fails++; NET.lastErr = (why || NET.lastErr || 'cerrada') + diag(); }
     NET.status = 'lost'; render(); retryJoin();
     conn.close();
   };
@@ -865,7 +875,8 @@ function renderRoom() {
              : `<div class="qr" id="qr" ${S.phase === 'setup' ? '' : 'hidden'}></div>` +
                `<div class="linkrow"><input id="roomLink" readonly value="${esc(url)}" aria-label="Enlace de la sala"><button class="btn ghost small" id="copyLink">Copiar</button></div>` +
                (S.phase === 'setup' ? '' : `<button class="btn ghost small" id="toggleQR" style="align-self:flex-start">Mostrar QR</button>`)) +
-      `<p class="hint">${online === 1 ? '1 jugador conectado' : online + ' jugadores conectados'}</p>`;
+      `<p class="hint">${online === 1 ? '1 jugador conectado' : online + ' jugadores conectados'}` +
+      (NET.pending.size ? ` · ${NET.pending.size === 1 ? '1 entrando' : NET.pending.size + ' entrando'}…` : '') + `</p>`;
   } else if (NET.status === 'error') {
     body = `<p class="hint">No se ha podido abrir la sala (¿hay internet?). Podéis jugar igualmente en este ordenador.</p><button class="btn ghost small" id="retryRoom" style="align-self:flex-start">Reintentar</button>`;
   } else {
@@ -1184,6 +1195,7 @@ function createGame() {
 function goHome() {
   if (NET.peer && !NET.peer.destroyed) NET.peer.destroy();
   NET.peer = null; NET.room = null; NET.status = 'off'; NET.conns.clear();
+  NET.pending.clear();
   clearInterval(timerId); clearInterval(moveId);
   try { sessionStorage.removeItem('trivial-host'); } catch {}
   S = null; modalKey = '';
