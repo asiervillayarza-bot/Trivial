@@ -70,7 +70,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .teams{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .team{display:grid;grid-template-columns:28px minmax(0,1fr) 40px 34px;align-items:center;gap:10px;padding:8px 10px;border-radius:12px}
 .team.current{background:var(--felt);box-shadow:inset 0 0 0 2px var(--ink)}
-.team .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;box-shadow:0 0 0 2px #fff}
+.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;box-shadow:0 0 0 2px #fff}
 .team .name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .team .count{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:800;text-align:right}
 
@@ -82,15 +82,51 @@ button{font:inherit;color:inherit;cursor:pointer}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{border:0;border-radius:10px;padding:8px 12px;background:var(--felt);font-weight:800;min-width:42px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.names{display:flex;flex-direction:column;gap:8px}
-.names div{display:flex;gap:8px;align-items:center}
+.names{display:flex;flex-direction:column;gap:10px}
+.trow{display:flex;flex-direction:column;gap:6px}
+.tline{display:flex;gap:8px;align-items:center}
+.tline .dot{flex:none}
 .names input{flex:1;min-width:0;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit;font-weight:600}
 .names input:focus{border-color:var(--focus);outline:none}
+.names input.need{border-color:var(--bad)}
 .field{display:flex;flex-direction:column;gap:8px}
 details summary{cursor:pointer;font-weight:800}
 details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;flex-direction:column;gap:6px;font-size:14px}
 .confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .confirm p{margin:0;flex-basis:100%;font-weight:600}
+
+/* Jugadores y sala */
+.members{display:flex;flex-wrap:wrap;gap:4px;font-size:13px;line-height:1.3}
+.team .members{grid-column:2/-1}
+.trow .members{padding-left:36px}
+.chip{background:var(--bg);border-radius:999px;padding:2px 9px;font-weight:600;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.me{background:var(--ink);color:var(--bg);font-weight:800}
+.chip.off{opacity:.45}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+.btn.small{font-size:14px;padding:.45em 1em}
+.code{font-family:var(--font-display);font-size:46px;line-height:1;letter-spacing:.14em;text-align:center;padding:10px 0;background:var(--bg);border-radius:12px}
+.qr{width:min(200px,70%);align-self:center;background:#fff;border-radius:12px;padding:6px;line-height:0}
+.qr svg{width:100%;height:auto}
+.linkrow{display:flex;gap:8px;align-items:center}
+.linkrow input{flex:1;min-width:0;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:7px 10px;color:var(--ink);font:inherit;font-size:14px;font-weight:600}
+.linkrow input:focus{border-color:var(--focus);outline:none}
+#joinCode{text-transform:uppercase;letter-spacing:.1em}
+.joinform{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px;margin:0}
+.joinform label{font-weight:800;font-size:14px}
+.status{display:flex;align-items:center;gap:8px;font-weight:600}
+.status b{width:10px;height:10px;border-radius:50%;flex:none;background:var(--bad)}
+.status.ok b{background:var(--ok)}
+.link{color:var(--muted);font-size:14px;align-self:flex-start}
+.pickteam{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:0;border-radius:12px;background:var(--felt);text-align:left}
+.pickteam .name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickteam .join{font-size:13px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--bg);color:var(--muted)}
+.pickteam.mine{box-shadow:inset 0 0 0 2px var(--ink)}
+.pickteam.mine .join{background:var(--ok);color:#06301a}
+.pickteam.current{background:var(--line)}
+.pickteam:disabled{cursor:default;opacity:.6}
+.teams li:not(.team) > .members{padding:6px 0 0 48px}
+.verdict .wait{display:block;font-family:var(--font-body);font-size:15px;font-weight:600;color:var(--muted)}
+@media (max-width:880px){body.lobby .side{order:-1}}
 
 /* Pregunta */
 .modal{position:fixed;inset:0;background:rgba(6,18,33,.78);display:grid;place-items:center;padding:16px;z-index:10;backdrop-filter:blur(3px)}
@@ -144,6 +180,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
   <aside class="side">
     <h1 class="brand">Trivial de clase<span>Preguntas y quesitos para jugar por equipos</span></h1>
     <section class="panel" id="sidepanel"></section>
+    <section class="panel room" id="roompanel"></section>
     <section class="panel">
       <h2>Categorías</h2>
       <div class="legend" id="legend"></div>
@@ -155,6 +192,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
           <li>Las casillas grandes con un quesito dan quesito si aciertas.</li>
           <li>Las casillas blancas ↻ te dejan tirar otra vez.</li>
           <li>Con los 6 quesitos, el resto de equipos elige la categoría de tu pregunta final. Si aciertas, ganas.</li>
+          <li>Desde el móvil: entrad con el código o el QR de la sala, elegid equipo y, cuando os toque, tirad y responded desde el móvil. El ordenador del profe también puede jugar por cualquier equipo.</li>
           <li>Teclado: 1–4 para responder, Intro para continuar.</li>
         </ul>
       </details>
@@ -337,15 +375,197 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const polar = (r, deg) => { const a = deg * Math.PI / 180; return [500 + r * Math.cos(a), 500 + r * Math.sin(a)]; };
 const f = n => n.toFixed(2);
+const store = (kind, key, val) => { try { const s = window[kind]; if (val === undefined) return s.getItem(key); s.setItem(key, val); } catch {} return null; };
 
-let S; // estado de la partida
-let timerId = null, moveId = null;
+let S; // estado de la partida (solo el ordenador anfitrión lo modifica; los móviles reciben una copia)
+let timerId = null, moveId = null, rollAnimId = null;
 
 function freshState() {
   return {
     phase:'setup', setupCount:4, setupNames:DEFAULT_NAMES.slice(), timeLimit:30,
-    teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, msg:'', winner:null, confirmReset:false,
+    teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, qn:0, picking:false, msg:'', winner:null, confirmReset:false,
+    players:[], // jugadores conectados desde el móvil: {pid, name, team, online}
   };
+}
+
+/* ---------- Red: sala para unirse con código o enlace ----------
+   El ordenador que abre la página sin «?sala=» es el anfitrión: crea una sala con PeerJS (WebRTC),
+   lleva la partida y envía el estado a los móviles. Los móviles abren «?sala=CÓDIGO», eligen equipo
+   y mandan sus acciones (tirar, elegir casilla, responder…) al anfitrión, que comprueba si les toca. */
+const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+const QR_URL = 'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js';
+const PEER_PREFIX = 'trivial-clase-v1-';
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const PARAMS = new URLSearchParams(location.search);
+const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+const JOIN = cleanCode(PARAMS.get('sala'));
+const NET = {
+  role: JOIN ? 'player' : 'host', room: JOIN || null, status:'off', peer:null,
+  conns:new Map(), // anfitrión: pid → conexión
+  conn:null, everConnected:false, retryId:null, tries:0, // jugador
+  pid:null, name:'',
+};
+const isHost = () => NET.role === 'host';
+const newCode = () => Array.from({length:5}, () => CODE_CHARS[rnd(CODE_CHARS.length)]).join('');
+const joinURL = code => location.origin + location.pathname + '?sala=' + code +
+  (PARAMS.get('servidor') ? '&servidor=' + encodeURIComponent(PARAMS.get('servidor')) : '');
+
+// Servidor PeerJS propio opcional: ?servidor=host:puerto (por defecto, el servidor público de PeerJS).
+function peerOptions() {
+  const srv = PARAMS.get('servidor');
+  if (!srv) return {};
+  const [host, port] = srv.split(':');
+  return {host, port:+port || (location.protocol === 'https:' ? 443 : 80), path:'/', secure:location.protocol === 'https:'};
+}
+const scripts = {};
+function loadScript(src) {
+  return scripts[src] || (scripts[src] = new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok;
+    s.onerror = () => { delete scripts[src]; s.remove(); ko(new Error('No se pudo cargar ' + src)); };
+    document.head.appendChild(s);
+  }));
+}
+
+// --- Anfitrión ---
+async function openRoom() {
+  if (NET.peer && !NET.peer.destroyed) NET.peer.destroy();
+  NET.room = NET.room || newCode();
+  NET.status = 'connecting'; renderRoom();
+  try { await loadScript(PEERJS_URL); } catch { NET.status = 'error'; renderRoom(); return; }
+  const peer = NET.peer = new Peer(PEER_PREFIX + NET.room, peerOptions());
+  peer.on('open', () => { NET.status = 'open'; NET.tries = 0; save(); renderRoom(); });
+  peer.on('connection', hostConn);
+  peer.on('disconnected', () => { if (NET.peer === peer && !peer.destroyed) setTimeout(() => !peer.destroyed && peer.reconnect(), 2000); });
+  peer.on('error', err => {
+    if (NET.peer !== peer) return;
+    if (err.type === 'unavailable-id') {
+      // Tras recargar la página el servidor puede tardar unos segundos en liberar el código: se reintenta antes de cambiarlo.
+      peer.destroy();
+      if (++NET.tries > 4) { NET.room = null; NET.tries = 0; }
+      setTimeout(openRoom, 2500);
+    } else if (['network','server-error','socket-error','socket-closed','browser-incompatible'].includes(err.type)) {
+      NET.status = 'error'; renderRoom();
+    }
+  });
+}
+function hostConn(conn) {
+  conn.on('data', msg => {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.t === 'hello' && typeof msg.pid === 'string' && msg.pid.length <= 40) {
+      const old = NET.conns.get(msg.pid);
+      if (old && old !== conn) old.close();
+      conn.pid = msg.pid;
+      NET.conns.set(msg.pid, conn);
+      let p = S.players.find(p => p.pid === msg.pid);
+      if (!p) {
+        if (S.players.length >= 80) return conn.close();
+        p = {pid:msg.pid, name:'', team:null, online:true};
+        S.players.push(p);
+      }
+      p.online = true;
+      const name = cleanName(msg.name);
+      if (name) p.name = name;
+      render();
+    } else if (msg.t === 'act' && conn.pid) {
+      perform(conn.pid, msg.a, msg.v);
+    }
+  });
+  conn.on('close', () => {
+    if (!conn.pid || NET.conns.get(conn.pid) !== conn) return;
+    NET.conns.delete(conn.pid);
+    if (S.phase === 'setup') S.players = S.players.filter(p => p.pid !== conn.pid);
+    else { const p = S.players.find(p => p.pid === conn.pid); if (p) p.online = false; }
+    render();
+  });
+}
+// Lo que ven los móviles: sin mazos ni la respuesta correcta hasta que se ha contestado.
+function publicState() {
+  const P = JSON.parse(JSON.stringify(S));
+  delete P.decks; delete P.confirmReset;
+  if (P.q) {
+    if (P.q.picked === null) delete P.q.answer;
+    P.q.left = S.q.deadline ? Math.max(0, S.q.deadline - Date.now()) : null;
+    delete P.q.deadline;
+  }
+  return P;
+}
+function broadcast() {
+  if (!isHost() || !NET.conns.size) return;
+  const msg = {t:'state', S:publicState()};
+  NET.conns.forEach(c => { if (c.open) c.send(msg); });
+}
+function save() {
+  if (isHost()) store('sessionStorage', 'trivial-host', JSON.stringify({S, room:NET.room}));
+}
+
+// --- Jugador (móvil) ---
+async function joinRoom() {
+  clearTimeout(NET.retryId);
+  if (NET.peer && !NET.peer.destroyed) NET.peer.destroy();
+  if (NET.status !== 'open') NET.status = 'connecting';
+  render();
+  try { await loadScript(PEERJS_URL); } catch { NET.status = 'error'; render(); return retryJoin(); }
+  const peer = NET.peer = new Peer(peerOptions());
+  peer.on('open', connectToHost);
+  peer.on('error', err => {
+    if (NET.peer !== peer) return;
+    NET.status = err.type === 'peer-unavailable' && !NET.everConnected ? 'missing' : 'lost';
+    render(); retryJoin();
+  });
+}
+function connectToHost() {
+  const conn = NET.conn = NET.peer.connect(PEER_PREFIX + NET.room, {reliable:true});
+  conn.on('open', () => {
+    NET.status = 'open'; NET.everConnected = true;
+    conn.send({t:'hello', pid:NET.pid, name:NET.name});
+  });
+  conn.on('data', msg => { if (NET.conn === conn && msg && msg.t === 'state') applyState(msg.S); });
+  conn.on('close', () => { if (NET.conn === conn) { NET.status = 'lost'; render(); retryJoin(); } });
+}
+function retryJoin() {
+  clearTimeout(NET.retryId);
+  NET.retryId = setTimeout(() => {
+    if (NET.peer && !NET.peer.destroyed && !NET.peer.disconnected) connectToHost(); else joinRoom();
+  }, 3000);
+}
+function applyState(P) {
+  S = Object.assign(freshState(), P);
+  if (S.q && S.q.left != null) S.q.deadline = Date.now() + S.q.left;
+  render();
+}
+
+// --- Acciones: en el anfitrión se aplican; en el móvil se envían al anfitrión ---
+const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+const playerTeam = pid => { const p = S.players.find(p => p.pid === pid); return p ? p.team : null; };
+const myTeam = () => isHost() ? null : playerTeam(NET.pid);
+function allowed(pid, a) {
+  if (pid === null) return true; // el ordenador anfitrión puede hacerlo todo (modo proyector)
+  if (a === 'team' || a === 'name') return true;
+  const team = playerTeam(pid);
+  if (team === null || !S.teams[team]) return false;
+  return a === 'cat' ? team !== S.turn : team === S.turn;
+}
+const canAct = a => allowed(isHost() ? null : NET.pid, a);
+function act(a, v = null) {
+  if (isHost()) return perform(null, a, v);
+  if (canAct(a) && NET.conn && NET.conn.open) NET.conn.send({t:'act', a, v});
+}
+function perform(pid, a, v) {
+  if (!allowed(pid, a)) return;
+  if (a === 'roll') roll();
+  else if (a === 'dest') chooseDest(+v);
+  else if (a === 'answer') { if (v && S.q && S.q.id === v.q && Number.isInteger(v.i) && v.i >= 0 && v.i < 4) answer(v.i); }
+  else if (a === 'cont') { if (S.q && S.q.id === v) afterAnswer(); }
+  else if (a === 'final') openFinalPicker();
+  else if (a === 'cat') { if (Number.isInteger(v) && v >= 0 && v < 6) pickFinalCat(v); }
+  else if (a === 'team' && pid !== null) {
+    const p = S.players.find(p => p.pid === pid), max = S.phase === 'setup' ? S.setupCount : S.teams.length;
+    if (p && (v === null || (Number.isInteger(v) && v >= 0 && v < max))) { p.team = v; render(); }
+  } else if (a === 'name' && pid !== null) {
+    const p = S.players.find(p => p.pid === pid);
+    if (p) { p.name = cleanName(v); render(); }
+  }
 }
 
 /* ---------- Tablero ---------- */
@@ -376,11 +596,11 @@ function buildBoard() {
   });
   $('cells').innerHTML = html;
   $('cells').addEventListener('click', e => {
-    const el = e.target.closest('.cell.dest'); if (el) chooseDest(+el.dataset.i);
+    const el = e.target.closest('.cell.dest'); if (el) act('dest', +el.dataset.i);
   });
   $('cells').addEventListener('keydown', e => {
     const el = e.target.closest('.cell.dest');
-    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); chooseDest(+el.dataset.i); }
+    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); act('dest', +el.dataset.i); }
   });
 }
 function pieSVG(wedges, size, cls = '') {
@@ -394,9 +614,11 @@ function pieSVG(wedges, size, cls = '') {
 
 /* ---------- Render ---------- */
 function render() {
+  document.body.classList.toggle('lobby', !isHost() && S.phase === 'setup');
   // destinos
+  const pick = S.phase === 'choose' && canAct('dest');
   document.querySelectorAll('.cell').forEach(el => {
-    const d = S.phase === 'choose' && S.dests.includes(+el.dataset.i);
+    const d = pick && S.dests.includes(+el.dataset.i);
     el.classList.toggle('dest', d);
     if (d) { el.setAttribute('tabindex','0'); el.setAttribute('role','button'); }
     else { el.removeAttribute('tabindex'); el.removeAttribute('role'); }
@@ -423,6 +645,9 @@ function render() {
   $('pieces').innerHTML = ph;
   renderHub();
   renderSide();
+  renderRoom();
+  renderModal();
+  if (isHost()) { broadcast(); save(); }
 }
 
 function dieHTML(n, rolling) {
@@ -432,77 +657,214 @@ function dieHTML(n, rolling) {
   for (let i = 0; i < 9; i++) s += `<i class="${on.includes(i) ? 'on' : ''}"></i>`;
   return `<div class="die${rolling ? ' rolling' : ''}" id="die" role="img" aria-label="${n ? 'Dado: ' + n : 'Dado'}">${s}</div>`;
 }
+function animateDie() {
+  clearInterval(rollAnimId);
+  if (S.phase !== 'rolling' || reduced) return;
+  rollAnimId = setInterval(() => {
+    const d = $('die');
+    if (d && S.phase === 'rolling') d.outerHTML = dieHTML(1 + rnd(6), true); else clearInterval(rollAnimId);
+  }, 70);
+}
+const teamColor = t => t.color === '#1b1b1b' ? 'var(--ink)' : t.color;
 
 function renderHub() {
   const hub = $('hub');
+  if (!isHost() && NET.status !== 'open' && !NET.everConnected) {
+    const txt = NET.status === 'missing' ? 'No encuentro esta sala. Revisa el código o espera a que el profe abra la partida.'
+      : NET.status === 'error' ? 'No se pudo conectar. Revisa la conexión a internet.' : 'Conectando…';
+    hub.innerHTML = `<div class="label">Sala</div><div class="who">${esc(NET.room)}</div><div class="msg">${txt}</div>`;
+    return;
+  }
   if (S.phase === 'setup') {
-    hub.innerHTML = `<div class="label">Preparados</div><div class="who">¿Quién sabe más?</div><div class="msg">Elige los equipos en el panel y pulsa «Empezar partida».</div>`;
+    hub.innerHTML = isHost()
+      ? `<div class="label">Preparados</div><div class="who">¿Quién sabe más?</div><div class="msg">Elige los equipos en el panel y pulsa «Empezar partida».</div>`
+      : `<div class="label">Sala ${esc(NET.room)}</div><div class="who">¿Quién sabe más?</div><div class="msg">Elige tu equipo y espera a que empiece la partida.</div>`;
     return;
   }
   if (S.phase === 'won') {
     const t = S.teams[S.winner];
-    hub.innerHTML = `<div class="label">Ganador</div>${pieSVG(t.wedges, 90, 'bigpie')}<div class="who">${esc(t.name)}</div><button class="btn" id="hubNew">Nueva partida</button>`;
-    $('hubNew').onclick = () => { S.confirmReset = false; resetToSetup(); };
+    hub.innerHTML = `<div class="label">Ganador</div>${pieSVG(t.wedges, 90, 'bigpie')}<div class="who">${esc(t.name)}</div>` +
+      (isHost() ? `<button class="btn" id="hubNew">Nueva partida</button>` : '');
+    if ($('hubNew')) $('hubNew').onclick = () => { S.confirmReset = false; resetToSetup(); };
     return;
   }
   const t = S.teams[S.turn];
-  let action = '';
-  if (S.phase === 'roll') action = `<button class="btn" id="rollBtn">Tirar dado</button>`;
-  if (S.phase === 'final') action = `<button class="btn" id="finalBtn">Pregunta final</button>`;
+  let action = '', msg = S.msg;
+  if (S.phase === 'roll') {
+    if (canAct('roll')) action = `<button class="btn" id="rollBtn">Tirar dado</button>`;
+    else msg = msg || `Esperando a que tire ${t.name}.`;
+  }
+  if (S.phase === 'choose' && !canAct('dest')) msg = `${t.name} está eligiendo casilla.`;
+  if (S.phase === 'final') {
+    if (canAct('final') && !S.picking) action = `<button class="btn" id="finalBtn">Pregunta final</button>`;
+    else if (S.picking) msg = 'Los demás equipos están eligiendo la categoría.';
+  }
+  const mine = !isHost() && myTeam() === S.turn;
   hub.innerHTML =
-    `<div class="label">Turno de</div>` +
-    `<div class="who" style="color:${t.color === '#1b1b1b' ? 'var(--ink)' : t.color}">${esc(t.name)}</div>` +
+    `<div class="label">${mine ? 'Os toca a vosotros' : 'Turno de'}</div>` +
+    `<div class="who" style="color:${teamColor(t)}">${esc(t.name)}</div>` +
     `<div class="row">${pieSVG(t.wedges, 90, 'bigpie')}${dieHTML(S.die, S.phase === 'rolling')}</div>` +
-    action + `<div class="msg">${esc(S.msg)}</div>`;
-  if ($('rollBtn')) $('rollBtn').onclick = roll;
-  if ($('finalBtn')) $('finalBtn').onclick = openFinalPicker;
+    action + `<div class="msg">${esc(msg)}</div>`;
+  if ($('rollBtn')) $('rollBtn').onclick = () => act('roll');
+  if ($('finalBtn')) $('finalBtn').onclick = () => act('final');
+  animateDie();
+}
+
+function membersHTML(k) {
+  const ps = S.players.filter(p => p.team === k);
+  if (!ps.length) return '';
+  return `<div class="members">` + ps.map(p =>
+    `<span class="chip${p.pid === NET.pid ? ' me' : ''}${p.online ? '' : ' off'}">${esc(p.name || 'Sin nombre')}</span>`).join('') + `</div>`;
+}
+
+// Redibuja un panel sin perder el foco ni el cursor del campo de texto que se está escribiendo.
+function setPanel(el, cls, html) {
+  const a = document.activeElement, id = a && el.contains(a) && a.id;
+  const sel = id && a.tagName === 'INPUT' ? [a.selectionStart, a.selectionEnd] : null;
+  el.className = cls; el.innerHTML = html;
+  const b = id && $(id);
+  if (b) { b.focus({preventScroll:true}); if (sel) b.setSelectionRange(sel[0], sel[1]); }
 }
 
 function renderSide() {
   const p = $('sidepanel');
+  if (!isHost()) return renderPlayerSide(p);
   if (S.phase === 'setup') {
     let names = '';
     for (let k = 0; k < S.setupCount; k++) {
       const tc = TEAM_COLORS[k];
-      names += `<div><span class="team" style="padding:0;display:block"><span class="dot" style="background:${tc.c};color:${tc.ink}">${k+1}</span></span>` +
-               `<input id="name${k}" maxlength="24" aria-label="Nombre del equipo ${k+1}" value="${esc(S.setupNames[k])}"></div>`;
+      names += `<div class="trow"><div class="tline"><span class="dot" style="background:${tc.c};color:${tc.ink}">${k+1}</span>` +
+               `<input id="name${k}" maxlength="24" aria-label="Nombre del equipo ${k+1}" value="${esc(S.setupNames[k])}"></div>${membersHTML(k)}</div>`;
     }
-    p.className = 'panel setup';
-    p.innerHTML =
+    const loose = S.players.filter(p => p.team === null);
+    setPanel(p, 'panel setup',
       `<h2>Nueva partida</h2>` +
       `<div class="field"><label>Número de equipos</label><div class="seg" id="countSeg">` +
         [2,3,4,5,6].map(n => `<button aria-pressed="${n === S.setupCount}" data-n="${n}">${n}</button>`).join('') + `</div></div>` +
       `<div class="field"><label>Nombres</label><div class="names">${names}</div></div>` +
+      (loose.length ? `<div class="field"><label>Sin equipo todavía</label><div class="members">` +
+        loose.map(p => `<span class="chip">${esc(p.name || 'Sin nombre')}</span>`).join('') + `</div></div>` : '') +
       `<div class="field"><label>Tiempo para responder</label><div class="seg" id="timeSeg">` +
         [[0,'Sin límite'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div>` +
-      `<button class="btn" id="startBtn" style="font-size:18px">Empezar partida</button>`;
-    p.querySelectorAll('.names input').forEach((inp, k) => inp.addEventListener('input', () => { S.setupNames[k] = inp.value; }));
-    $('countSeg').onclick = e => { const b = e.target.closest('button'); if (b) { S.setupCount = +b.dataset.n; renderSide(); } };
-    $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) { S.timeLimit = +b.dataset.v; renderSide(); } };
+      `<button class="btn" id="startBtn" style="font-size:18px">Empezar partida</button>`);
+    p.querySelectorAll('.names input').forEach((inp, k) => inp.addEventListener('input', () => { S.setupNames[k] = inp.value; broadcast(); save(); }));
+    $('countSeg').onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      S.setupCount = +b.dataset.n;
+      S.players.forEach(p => { if (p.team !== null && p.team >= S.setupCount) p.team = null; });
+      render();
+    };
+    $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) { S.timeLimit = +b.dataset.v; render(); } };
     $('startBtn').onclick = startGame;
     return;
   }
-  p.className = 'panel';
   const rows = S.teams.map((t, k) =>
     `<li class="team${k === S.turn && S.phase !== 'won' ? ' current' : ''}">` +
     `<span class="dot" style="background:${t.color};color:${t.ink}">${k+1}</span>` +
     `<span class="name" title="${esc(t.name)}">${esc(t.name)}</span>${pieSVG(t.wedges, 34)}` +
-    `<span class="count">${t.wedges.filter(Boolean).length}/6</span></li>`).join('');
-  p.innerHTML = `<h2>Equipos</h2><ul class="teams">${rows}</ul>` +
+    `<span class="count">${t.wedges.filter(Boolean).length}/6</span>${membersHTML(k)}</li>`).join('');
+  setPanel(p, 'panel', `<h2>Equipos</h2><ul class="teams">${rows}</ul>` +
     (S.confirmReset
       ? `<div class="confirm"><p>¿Seguro? Se perderá la partida actual.</p><button class="btn" id="yesReset">Sí, empezar de nuevo</button><button class="btn ghost" id="noReset">Seguir jugando</button></div>`
-      : `<button class="btn ghost" id="resetBtn" style="font-size:15px;align-self:flex-start">Nueva partida</button>`);
+      : `<button class="btn ghost" id="resetBtn" style="font-size:15px;align-self:flex-start">Nueva partida</button>`));
   if ($('resetBtn')) $('resetBtn').onclick = () => { if (S.phase === 'won') resetToSetup(); else { S.confirmReset = true; renderSide(); } };
   if ($('yesReset')) $('yesReset').onclick = () => { S.confirmReset = false; resetToSetup(); };
   if ($('noReset')) $('noReset').onclick = () => { S.confirmReset = false; renderSide(); };
 }
 
+function renderPlayerSide(p) {
+  const playing = S.phase !== 'setup';
+  const count = !NET.everConnected ? 0 : playing ? S.teams.length : S.setupCount;
+  const mine = myTeam();
+  const connected = NET.status === 'open';
+  let teams = '';
+  for (let k = 0; k < count; k++) {
+    const t = playing ? S.teams[k] : {name:(S.setupNames[k] || '').trim() || `Equipo ${k+1}`, color:TEAM_COLORS[k].c, ink:TEAM_COLORS[k].ink};
+    teams += `<li><button class="pickteam${k === mine ? ' mine' : ''}${playing && k === S.turn && S.phase !== 'won' ? ' current' : ''}" data-k="${k}" aria-pressed="${k === mine}"${connected ? '' : ' disabled'}>` +
+      `<span class="dot" style="background:${t.color};color:${t.ink}">${k+1}</span>` +
+      `<span class="name">${esc(t.name)}</span>` +
+      (playing ? `${pieSVG(t.wedges, 34)}` : `<span class="join">${k === mine ? 'Tu equipo' : 'Unirme'}</span>`) +
+      `</button>${membersHTML(k)}</li>`;
+  }
+  setPanel(p, 'panel setup',
+    `<h2>${playing ? 'Equipos' : 'Únete a un equipo'}</h2>` +
+    `<div class="field"><label for="myName">Tu nombre</label><div class="names"><div class="tline"><input id="myName" maxlength="24" placeholder="Escribe tu nombre" value="${esc(NET.name)}" autocomplete="nickname"></div></div></div>` +
+    (count ? `<ul class="teams">${teams}</ul>` : '') +
+    (mine === null && playing ? `<p class="hint">Pulsa un equipo para unirte y responder desde aquí.</p>` : '') +
+    (!playing && mine !== null ? `<p class="hint">¡Listo! Espera a que el profe empiece la partida.</p>` : ''));
+  const inp = $('myName');
+  let deb;
+  inp.addEventListener('input', () => {
+    NET.name = cleanName(inp.value);
+    store('localStorage', 'trivial-name', NET.name);
+    clearTimeout(deb); deb = setTimeout(() => act('name', NET.name), 400);
+  });
+  p.querySelectorAll('.pickteam').forEach(b => b.onclick = () => {
+    if (!NET.name) { inp.focus(); inp.classList.add('need'); return; }
+    act('team', +b.dataset.k);
+  });
+}
+
+function renderRoom() {
+  const p = $('roompanel');
+  if (!isHost()) {
+    const st = {open:'Conectado', connecting:'Conectando…', lost:'Conexión perdida. Reintentando…', missing:'Buscando la sala…', error:'Sin conexión. Reintentando…'}[NET.status] || '';
+    setPanel(p, 'panel room', `<div class="status ${NET.status === 'open' ? 'ok' : 'bad'}"><b></b>Sala <strong>${esc(NET.room)}</strong> · ${st}</div>` +
+      `<a class="link" href="${esc(location.pathname)}">Salir de la sala</a>`);
+    return;
+  }
+  const online = S.players.filter(p => p.online).length;
+  let body;
+  if (NET.status === 'open') {
+    const url = joinURL(NET.room), local = location.protocol === 'file:';
+    body =
+      `<p class="hint">Entrad desde el móvil con el código o escaneando el QR:</p>` +
+      `<div class="code" aria-label="Código de la sala">${esc(NET.room)}</div>` +
+      (local ? `<p class="hint">Estás abriendo el juego como archivo. Para que el enlace funcione en los móviles, abre el juego desde su página web (por ejemplo, GitHub Pages) y entrad en ella con este código.</p>`
+             : `<div class="qr" id="qr" ${S.phase === 'setup' ? '' : 'hidden'}></div>` +
+               `<div class="linkrow"><input id="roomLink" readonly value="${esc(url)}" aria-label="Enlace de la sala"><button class="btn ghost small" id="copyLink">Copiar</button></div>` +
+               (S.phase === 'setup' ? '' : `<button class="btn ghost small" id="toggleQR" style="align-self:flex-start">Mostrar QR</button>`)) +
+      `<p class="hint">${online === 1 ? '1 jugador conectado' : online + ' jugadores conectados'}</p>`;
+  } else if (NET.status === 'error') {
+    body = `<p class="hint">No se ha podido abrir la sala (¿hay internet?). Podéis jugar igualmente en este ordenador.</p><button class="btn ghost small" id="retryRoom" style="align-self:flex-start">Reintentar</button>`;
+  } else {
+    body = `<p class="hint">Abriendo la sala…</p>`;
+  }
+  const joinForm = S.phase === 'setup'
+    ? `<form class="joinform" id="joinForm"><label for="joinCode">¿Te han pasado un código?</label><div class="linkrow"><input id="joinCode" maxlength="8" placeholder="Código" autocapitalize="characters" autocomplete="off"><button class="btn ghost small">Unirme</button></div></form>` : '';
+  // El QR no cambia: si ya está dibujado para esta sala se conserva.
+  const qrOld = $('qr') && $('qr').dataset.room === NET.room ? $('qr').innerHTML : '';
+  setPanel(p, 'panel room', `<h2>Jugar con móviles</h2>${body}${joinForm}`);
+  if ($('qr')) drawQR($('qr'), qrOld);
+  if ($('copyLink')) $('copyLink').onclick = () => {
+    const inp = $('roomLink'); inp.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.reject()).catch(() => document.execCommand('copy'));
+    $('copyLink').textContent = '¡Copiado!';
+  };
+  if ($('toggleQR')) $('toggleQR').onclick = () => { const q = $('qr'); q.hidden = !q.hidden; $('toggleQR').textContent = q.hidden ? 'Mostrar QR' : 'Ocultar QR'; };
+  if ($('retryRoom')) $('retryRoom').onclick = openRoom;
+  if ($('joinForm')) $('joinForm').onsubmit = e => {
+    e.preventDefault();
+    const code = cleanCode($('joinCode').value);
+    if (code) location.href = joinURL(code);
+  };
+}
+async function drawQR(el, cached) {
+  el.dataset.room = NET.room;
+  if (cached) { el.innerHTML = cached; return; }
+  try {
+    await loadScript(QR_URL);
+    const qr = qrcode(0, 'M'); qr.addData(joinURL(NET.room)); qr.make();
+    if (el.dataset.room === NET.room) el.innerHTML = qr.createSvgTag({cellSize:4, margin:2, scalable:true, title:'Código QR para unirse a la sala'});
+  } catch { el.hidden = true; }
+}
+
 /* ---------- Partida ---------- */
 function resetToSetup() {
-  const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit};
+  const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, players:S.players.filter(p => p.online)};
   clearInterval(timerId); clearInterval(moveId);
   S = Object.assign(freshState(), keep);
-  closeModal(); render();
+  render();
 }
 function startGame() {
   S.teams = [];
@@ -517,6 +879,7 @@ function startGame() {
 }
 function beginTurn(keepMsg) {
   const t = S.teams[S.turn];
+  S.picking = false;
   if (t.wedges.every(Boolean)) {
     S.phase = 'final';
     S.msg = '¡Tiene los 6 quesitos! Los demás equipos eligen la categoría.';
@@ -535,20 +898,14 @@ function roll() {
   if (S.phase !== 'roll') return;
   S.phase = 'rolling'; S.msg = '';
   render();
-  const finish = () => {
+  setTimeout(() => {
     S.die = 1 + rnd(6);
     const pos = S.teams[S.turn].pos;
     S.dests = [...new Set([(pos + S.die) % N, (pos - S.die + N) % N])];
     S.phase = 'choose';
     S.msg = 'Pulsa una de las casillas que parpadean.';
     render();
-  };
-  if (reduced) return finish();
-  let ticks = 0;
-  const id = setInterval(() => {
-    const d = $('die'); if (d) d.outerHTML = dieHTML(1 + rnd(6), true);
-    if (++ticks >= 9) { clearInterval(id); finish(); }
-  }, 70);
+  }, reduced ? 0 : 630);
 }
 function chooseDest(cell) {
   if (S.phase !== 'choose' || !S.dests.includes(cell)) return;
@@ -580,55 +937,88 @@ function draw(cat) {
   return S.decks[cat].pop();
 }
 function ask(cat, kind) {
-  const qi = draw(cat), q = QUESTIONS[cat][qi];
-  S.q = {cat, qi, kind, options:shuffle(q.slice(1)), answer:q[1], picked:null, deadline:null};
-  S.phase = 'question';
+  const q = QUESTIONS[cat][draw(cat)];
+  S.qn++;
+  S.q = {id:S.qn, cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null,
+         deadline:S.timeLimit ? Date.now() + S.timeLimit * 1000 : null};
+  S.phase = 'question'; S.picking = false;
   render();
-  openQuestion();
-}
-
-/* ---------- Ventana de pregunta ---------- */
-function openModal(html) { $('qcard').innerHTML = html; $('modal').hidden = false; }
-function closeModal() { $('modal').hidden = true; clearInterval(timerId); }
-
-function openQuestion() {
-  const q = S.q, cat = CATS[q.cat], t = S.teams[S.turn];
-  const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' ? 'Pregunta final' : '';
-  const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join('');
-  openModal(
-    `<div class="qhead" style="background:${cat.color};color:${cat.ink}"><span class="cat" id="qtitle">${cat.name}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>` +
-    (S.timeLimit ? `<div class="timer"><i id="tbar"></i></div>` : '') +
-    `<div class="qbody"><p class="qteam">Responde ${esc(t.name)}</p><p class="qtext">${esc(QUESTIONS[q.cat][q.qi][0])}</p>` +
-    `<div class="opts" id="opts">${opts}</div>` +
-    `<div class="qfoot"><p class="verdict" id="verdict"></p><button class="btn" id="contBtn" hidden>Continuar</button></div></div>`
-  );
-  $('opts').onclick = e => { const b = e.target.closest('.opt'); if (b) answer(+b.dataset.i); };
-  $('contBtn').onclick = afterAnswer;
-  if (q.picked !== null) return showVerdict();
-  $('opts').querySelector('.opt').focus({preventScroll:true});
-  if (S.timeLimit) {
-    q.deadline = Date.now() + S.timeLimit * 1000;
-    clearInterval(timerId);
-    timerId = setInterval(() => {
-      const left = Math.max(0, q.deadline - Date.now()), frac = left / (S.timeLimit * 1000);
-      const bar = $('tbar');
-      if (bar) { bar.style.transform = `scaleX(${frac})`; bar.classList.toggle('low', frac < .25); }
-      if (left <= 0) answer(-1);
-    }, 100);
-  }
 }
 function answer(i) {
   const q = S.q;
-  if (!q || q.picked !== null) return;
-  clearInterval(timerId);
+  if (S.phase !== 'question' || !q || q.picked !== null) return;
   q.picked = i;
   const ok = i >= 0 && q.options[i] === q.answer;
   const t = S.teams[S.turn];
   q.ok = ok;
   if (ok && q.kind === 'wedge') t.wedges[q.cat] = true;
   if (ok && q.kind === 'final') S.winner = S.turn;
-  showVerdict();
-  renderSide();
+  render();
+}
+function afterAnswer() {
+  const q = S.q;
+  if (S.phase !== 'question' || !q || q.picked === null) return;
+  S.q = null;
+  if (S.winner !== null) { S.phase = 'won'; return render(); }
+  if (q.ok) { S.msg = q.kind === 'wedge' ? '¡Quesito nuevo! Sigue tirando.' : '¡Bien! Sigue tirando.'; beginTurn(true); }
+  else nextTeam();
+}
+function openFinalPicker() {
+  if (S.phase !== 'final') return;
+  S.picking = true;
+  render();
+}
+function pickFinalCat(k) {
+  if (S.phase !== 'final' || !S.picking) return;
+  ask(k, 'final');
+}
+
+/* ---------- Ventanas (se dibujan a partir del estado) ---------- */
+let modalKey = '', winClosed = false;
+function openModal(html) { $('qcard').innerHTML = html; $('modal').hidden = false; }
+function closeModal() { $('modal').hidden = true; clearInterval(timerId); }
+function renderModal() {
+  if (S.phase !== 'won') winClosed = false;
+  let key = '';
+  if (S.phase === 'question' && S.q) key = `q${S.q.id}:${S.q.picked}:${canAct('answer')}`;
+  else if (S.phase === 'final' && S.picking) key = 'pick:' + canAct('cat');
+  else if (S.phase === 'won' && !winClosed) key = 'won';
+  if (key === modalKey) return;
+  modalKey = key;
+  if (!key) closeModal();
+  else if (key[0] === 'q') drawQuestion();
+  else if (key[0] === 'p') drawPicker();
+  else drawWin();
+}
+
+function drawQuestion() {
+  const q = S.q, cat = CATS[q.cat], t = S.teams[S.turn], mine = canAct('answer');
+  const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' ? 'Pregunta final' : '';
+  const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine ? '' : ' disabled'}><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join('');
+  const who = !isHost() && myTeam() === S.turn ? 'Responde tu equipo' : `Responde ${esc(t.name)}`;
+  openModal(
+    `<div class="qhead" style="background:${cat.color};color:${cat.ink}"><span class="cat" id="qtitle">${cat.name}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>` +
+    (S.timeLimit ? `<div class="timer"><i id="tbar"></i></div>` : '') +
+    `<div class="qbody"><p class="qteam">${who}</p><p class="qtext">${esc(q.text)}</p>` +
+    `<div class="opts" id="opts">${opts}</div>` +
+    `<div class="qfoot"><p class="verdict" id="verdict"></p><button class="btn" id="contBtn" hidden>Continuar</button></div></div>`
+  );
+  $('opts').onclick = e => { const b = e.target.closest('.opt'); if (b && !b.disabled) act('answer', {q:q.id, i:+b.dataset.i}); };
+  $('contBtn').onclick = () => act('cont', q.id);
+  clearInterval(timerId);
+  if (q.picked !== null) return showVerdict();
+  if (mine) $('opts').querySelector('.opt').focus({preventScroll:true});
+  if (S.timeLimit) {
+    const tick = () => {
+      if (!S.q || !S.q.deadline) return;
+      const left = Math.max(0, S.q.deadline - Date.now()), frac = left / (S.timeLimit * 1000);
+      const bar = $('tbar');
+      if (bar) { bar.style.transform = `scaleX(${frac})`; bar.classList.toggle('low', frac < .25); }
+      if (left <= 0 && isHost()) answer(-1);
+    };
+    tick();
+    timerId = setInterval(tick, 100);
+  }
 }
 function showVerdict() {
   const q = S.q, t = S.teams[S.turn];
@@ -650,61 +1040,68 @@ function showVerdict() {
     btn = `Turno de ${S.teams[(S.turn + 1) % S.teams.length].name}`;
   }
   v.textContent = text;
-  const c = $('contBtn'); c.textContent = btn; c.hidden = false; c.focus({preventScroll:true});
+  const c = $('contBtn');
+  if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
+  else v.insertAdjacentHTML('beforeend', `<span class="wait">Esperando a ${esc(t.name)}…</span>`);
 }
-function afterAnswer() {
-  const q = S.q; S.q = null;
-  closeModal();
-  if (S.winner !== null) { S.phase = 'won'; render(); return showWin(); }
-  if (q.ok) { S.msg = q.kind === 'wedge' ? '¡Quesito nuevo! Sigue tirando.' : '¡Bien! Sigue tirando.'; beginTurn(true); }
-  else nextTeam();
-}
-function openFinalPicker() {
-  if (S.phase !== 'final') return;
-  const t = S.teams[S.turn];
+function drawPicker() {
+  const t = S.teams[S.turn], mine = canAct('cat');
   openModal(
     `<div class="qhead" style="background:var(--felt)"><span class="cat" id="qtitle">Pregunta final</span><span class="tag">${esc(t.name)}</span></div>` +
-    `<div class="qbody"><p class="qtext">Los demás equipos eligen la categoría</p>` +
+    `<div class="qbody"><p class="qtext">${mine ? 'Los demás equipos eligen la categoría' : 'Los demás equipos están eligiendo la categoría…'}</p>` +
     `<div class="catpick" id="catpick">` +
-      CATS.map((c, k) => `<button data-k="${k}" style="background:${c.color};color:${c.ink}">${c.name}</button>`).join('') +
+      CATS.map((c, k) => `<button data-k="${k}" style="background:${c.color};color:${c.ink}"${mine ? '' : ' disabled'}>${c.name}</button>`).join('') +
     `</div></div>`
   );
-  $('catpick').onclick = e => { const b = e.target.closest('button'); if (b) ask(+b.dataset.k, 'final'); };
-  $('catpick').querySelector('button').focus({preventScroll:true});
+  $('catpick').onclick = e => { const b = e.target.closest('button'); if (b && !b.disabled) act('cat', +b.dataset.k); };
+  if (mine) $('catpick').querySelector('button').focus({preventScroll:true});
 }
-function showWin() {
+function drawWin() {
   const t = S.teams[S.winner];
   openModal(
     `<div class="qhead" style="background:${t.color};color:${t.ink}"><span class="cat" id="qtitle">Fin de la partida</span></div>` +
     `<div class="qbody" style="align-items:center;text-align:center">${pieSVG(t.wedges, 140)}<p class="win">¡${esc(t.name)} gana!</p>` +
-    `<div class="qfoot" style="justify-content:center"><button class="btn" id="againBtn">Nueva partida</button><button class="btn ghost" id="closeWin">Ver tablero</button></div></div>`
+    `<div class="qfoot" style="justify-content:center">${isHost() ? `<button class="btn" id="againBtn">Nueva partida</button>` : ''}<button class="btn ghost" id="closeWin">Ver tablero</button></div></div>`
   );
-  $('againBtn').onclick = resetToSetup;
-  $('closeWin').onclick = closeModal;
-  $('againBtn').focus({preventScroll:true});
+  if ($('againBtn')) { $('againBtn').onclick = resetToSetup; $('againBtn').focus({preventScroll:true}); }
+  $('closeWin').onclick = () => { winClosed = true; renderModal(); };
 }
 
 document.addEventListener('keydown', e => {
   if (e.target.matches('input')) return;
-  if (S.phase === 'question' && S.q && S.q.picked === null && /^[1-4]$/.test(e.key)) answer(+e.key - 1);
-  else if (S.phase === 'roll' && $('modal').hidden && (e.key === ' ' || e.key === 'Enter') && !e.target.closest('button,.cell')) { e.preventDefault(); roll(); }
+  if (S.phase === 'question' && S.q && S.q.picked === null && /^[1-4]$/.test(e.key)) act('answer', {q:S.q.id, i:+e.key - 1});
+  else if (S.phase === 'roll' && $('modal').hidden && (e.key === ' ' || e.key === 'Enter') && !e.target.closest('button,.cell')) { e.preventDefault(); act('roll'); }
 });
 
-/* ---------- Arranque (conserva la partida si la página se actualiza) ---------- */
+/* ---------- Arranque (el anfitrión conserva la partida y la sala si la página se actualiza) ---------- */
 function start(data) {
-  S = Object.assign(freshState(), data && data.S ? data.S : {});
   buildLegend(); buildBoard();
+  if (!isHost()) {
+    S = freshState();
+    NET.pid = store('localStorage', 'trivial-pid') || Math.random().toString(36).slice(2) + Date.now().toString(36);
+    store('localStorage', 'trivial-pid', NET.pid);
+    NET.name = cleanName(store('localStorage', 'trivial-name'));
+    joinRoom();
+    return;
+  }
+  let saved = data && data.S ? data : null;
+  if (!saved) try { saved = JSON.parse(store('sessionStorage', 'trivial-host')); } catch {}
+  S = Object.assign(freshState(), saved && saved.S ? saved.S : {});
+  NET.room = saved && saved.room || null;
+  S.players.forEach(p => p.online = false);
+  if (S.phase === 'setup') S.players = [];
   if (S.phase === 'rolling') S.phase = 'roll';
-  if (S.phase === 'moving') { land(); return; }
-  render();
-  if (S.phase === 'question' && S.q) openQuestion();
-  if (S.phase === 'won') showWin();
+  if (S.q && S.q.picked === null && S.timeLimit) S.q.deadline = Date.now() + S.timeLimit * 1000;
+  if (S.phase === 'moving') land(); else render();
+  openRoom();
 }
+addEventListener('pagehide', () => { if (NET.peer && !NET.peer.destroyed) NET.peer.destroy(); });
+addEventListener('pageshow', e => { if (e.persisted && S) isHost() ? openRoom() : joinRoom(); });
 function buildLegend() {
   $('legend').innerHTML = CATS.map(c => `<div><b style="background:${c.color}"></b>${c.name}</div>`).join('') +
     `<div><b style="background:var(--neutral)"></b>↻ Tira otra vez</div>`;
 }
-window.claude?.hot?.snapshot?.(() => ({S}));
+window.claude?.hot?.snapshot?.(() => ({S, room:NET.room}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
 </body>
