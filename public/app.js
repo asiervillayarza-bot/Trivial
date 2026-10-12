@@ -4,8 +4,8 @@ import {CATS, TEAM_COLORS, DEFAULT_NAMES, N, CELLS, allowed, cleanCode, cleanNam
 
 const QR_URL = 'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-// Ángulos de cada casilla del anillo: las de quesito son casi el doble de anchas que las normales.
-const HQ_WIDTH = 1.9;
+// Ángulos de cada casilla del anillo: las de quesito son casi el triple de anchas que las normales.
+const HQ_WIDTH = 2.8;
 const CELL_ANG = (() => {
   const w = CELLS.map(c => c.type === 'hq' ? HQ_WIDTH : 1), unit = 360 / w.reduce((a, b) => a + b);
   let a = -90 - w[0] * unit / 2;
@@ -126,9 +126,9 @@ function buildBoard() {
     const hq = c.type === 'hq';
     const fill = c.type === 'again' ? 'var(--neutral)' : CATS[c.cat].color;
     const label = c.type === 'again' ? 'Tira otra vez' : (hq ? 'Quesito de ' : '') + CATS[c.cat].name;
-    html += `<path class="cell" data-i="${i}" d="${arcPath(hq ? 326 : 372, hq ? 499 : 482, a0, a1)}" fill="${fill}"><title>${label}</title></path>`;
+    html += `<path class="cell" data-i="${i}" d="${arcPath(hq ? 342 : 372, hq ? 497 : 482, a0, a1)}" fill="${fill}"><title>${label}</title></path>`;
     // Dibujo de cada casilla: icono de la categoría, medallón en las de quesito y un dado en las de «tira otra vez».
-    const [x, y] = polar(hq ? 412 : 427, ac);
+    const [x, y] = polar(hq ? 420 : 427, ac);
     const icon = (size, color, body, sw = 2, extra = '') =>
       `<g transform="translate(${f(x - size / 2)} ${f(y - size / 2)}) scale(${f(size / 24)})" fill="none" stroke="${color}" stroke-width="${sw}" ` +
       `stroke-linecap="round" stroke-linejoin="round" pointer-events="none"${extra}>${body}</g>`;
