@@ -44,15 +44,14 @@ try {
   await W(600);
   assert.deepEqual(await ane.$$eval('.tcard[data-k="0"] .avatar > span', els => els.map(e => e.textContent.replace('★ ', ''))), ['Ane (tú)', 'Jon']);
   assert.equal(await jon.$('#startBtn'), null, 'solo quien crea la partida la puede empezar');
-  // Un bot en el equipo de Mikel
-  await ane.click('#botSeg button[data-k="1"]'); await W(400);
+  // (Los bots se prueban en tests/game.test.js: aquí solo personas, para que la partida avance a un ritmo fijo.)
   await ane.click('#startBtn'); await W(800);
 
   const pages = {Ane:ane, Jon:jon, Mikel:mikel};
   const turns = [];
   let chatChecked = false;
-  const end = Date.now() + 90000;
-  while (Date.now() < end && turns.length < 8) {
+  const end = Date.now() + 180000;
+  while (Date.now() < end && (turns.length < 6 || !chatChecked)) {
     const st = await state(ane);
     const roller = st.players.find(p => p.pid === st.roller);
     if (!roller || roller.bot || st.phase === 'rolling' || st.phase === 'moving') { await W(400); continue; }

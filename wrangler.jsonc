@@ -1,7 +1,7 @@
 // Configuración de Cloudflare: un Worker que sirve la web (public/) y las salas de juego (Durable Objects).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "quesitos",
+  "name": "trivial",
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
   "assets": {
