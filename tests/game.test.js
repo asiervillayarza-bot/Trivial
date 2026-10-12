@@ -3,6 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame} from '../src/game.js';
 import {QUESTIONS} from '../src/questions.js';
+import {judge, canBeOpen} from '../src/answers.js';
 
 const FAST = {roll:0, step:0, bot:0, botAnswer:0, botCont:0, botVote:0, away:50, hostAway:50, setupAway:50};
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -17,6 +18,7 @@ function threePlayers() {
   const t = setup();
   t.g.join('ane', 'Ane'); t.g.join('jon', 'Jon'); t.g.join('mikel', 'Mikel');
   t.g.perform('ane', 'team', 0); t.g.perform('jon', 'team', 0); t.g.perform('mikel', 'team', 1);
+  t.g.perform('ane', 'setup', {open:0}); // solo preguntas con opciones (las de escribir tienen sus pruebas)
   return t;
 }
 // Juega el turno actual hasta la pregunta.
@@ -140,6 +142,7 @@ test('los bots juegan solos', async () => {
   const t = setup();
   t.g.join('ane', 'Ane');
   t.g.perform('ane', 'team', 0);
+  t.g.perform('ane', 'setup', {open:0});
   t.g.perform('ane', 'addBot', 1);
   t.g.perform('jon', 'addBot', 0); // solo quien dirige añade bots
   assert.equal(t.S().players.filter(p => p.bot).length, 1);
@@ -210,4 +213,42 @@ test('ronda final: con 3 fallos pasa el turno y se repite la próxima vez', () =
   assert.notEqual(t.S().turn, team, 'con 3 fallos pasa el turno');
   assert.equal(t.S().final, null);
   assert.equal(t.S().winner, null);
+});
+
+test('preguntas para escribir: no se envían las opciones y se corrige lo escrito', async () => {
+  const t = threePlayers();
+  t.g.perform('ane', 'setup', {open:2});
+  t.g.perform('ane', 'start');
+  let q;
+  for (let i = 0; i < 30; i++) { // casi todas las preguntas se pueden hacer para escribir
+    await toQuestion(t);
+    q = t.S().q;
+    if (q.open) break;
+    t.g.perform(t.S().roller, 'answer', {q:q.id, i:0}); t.g.perform(t.S().roller, 'cont', q.id);
+  }
+  assert.ok(q.open);
+  const pub = t.g.publicState();
+  assert.equal(pub.q.options, undefined, 'sin opciones');
+  assert.equal(pub.q.answer, undefined);
+  t.g.perform(t.S().roller, 'answer', {q:q.id, i:0});
+  assert.equal(t.S().q.picked, null, 'no vale elegir una opción');
+  const mate = t.S().players.find(p => p.team === t.S().turn && p.pid !== t.S().roller);
+  if (mate) { t.g.perform(mate.pid, 'answer', {q:q.id, text:q.answer}); assert.equal(t.S().q.picked, null, 'solo responde a quien le toca'); }
+  t.g.perform(t.S().roller, 'answer', {q:q.id, text:'  ' + q.answer.toUpperCase() + ' '});
+  assert.equal(t.S().q.ok, true);
+  assert.equal(t.g.publicState().q.answer, q.answer);
+});
+
+test('corrección de lo escrito: tildes, mayúsculas, erratas pequeñas y el apellido', () => {
+  const ok = [['cervantes', 'Miguel de Cervantes'], ['Velazques', 'Velázquez'], ['el volga', 'Volga'], ['343', '343 m/s'],
+    ['343 m/s', '343 m/s'], ['crick', 'Watson y Crick'], ['leonardo da vinci', 'Leonardo da Vinci'], ['JUPITER', 'Júpiter']];
+  const ko = [['', 'Volga'], ['Felipe III', 'Felipe II'], ['Vitamina A', 'Vitamina D'], ['8 minutos', '8 segundos'],
+    ['mogol', 'mongol'], ['watson', 'Watson y Crick'], ['344', '343 m/s'], ['Marte', 'Júpiter']];
+  ok.forEach(([a, b]) => assert.ok(judge(a, b), `${a} → ${b}`));
+  ko.forEach(([a, b]) => assert.ok(!judge(a, b), `${a} no es ${b}`));
+  // Ninguna opción incorrecta se da por buena con la corrección flexible.
+  QUESTIONS.flat().filter(q => canBeOpen(q[1])).forEach(q => {
+    assert.ok(judge(q[1], q[1]), q[0]);
+    q.slice(2).forEach(o => assert.ok(!judge(o, q[1]), `${o} no debería valer en: ${q[0]}`));
+  });
 });

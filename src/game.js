@@ -2,6 +2,7 @@
 // los navegadores solo mandan acciones («tirar», «responder»…) y reciben una copia del estado sin las respuestas.
 import {CELLS, N, TEAM_COLORS, DEFAULT_NAMES, allowed, cleanName, playerTeam, teamPlayers, playerName} from '../public/shared.js';
 import {QUESTIONS} from './questions.js';
+import {canBeOpen, judge} from './answers.js';
 
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -20,6 +21,7 @@ export const DEFAULT_TIMES = {
 export function freshState() {
   return {
     phase:'setup', setupCount:4, setupNames:DEFAULT_NAMES.slice(), timeLimit:30,
+    openMode:1, // preguntas para escribir (sin opciones): 0 ninguna, 1 una de cada tres, 2 todas las que se puedan
     teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, qn:0, final:null, msg:'', winner:null,
     players:[], // {pid, name, team, online, bot?, leftAt?}
     hostPid:null, // quien dirige la partida (ajustes, empezar, bots)
@@ -80,7 +82,11 @@ export function createGame({hooks, saved = null, times = {}}) {
     if (!allowed(S, pid, a)) return;
     if (a === 'roll') roll();
     else if (a === 'dest') chooseDest(+v);
-    else if (a === 'answer') { if (v && S.q && S.q.id === v.q && Number.isInteger(v.i) && v.i >= 0 && v.i < 4) answer(v.i); }
+    else if (a === 'answer') {
+      if (!v || !S.q || S.q.id !== v.q) return;
+      if (S.q.open) { if (typeof v.text === 'string' && v.text.trim()) answer(0, v.text.replace(/\s+/g, ' ').trim().slice(0, 60)); }
+      else if (Number.isInteger(v.i) && v.i >= 0 && v.i < 4) answer(v.i);
+    }
     else if (a === 'cont') { if (S.q && S.q.id === v) afterAnswer(); }
     else if (a === 'final') startFinal();
     else if (a === 'chat' && v && typeof v === 'object') postChat(pid, v);
@@ -108,6 +114,7 @@ export function createGame({hooks, saved = null, times = {}}) {
       S.players.forEach(p => { if (p.team !== null && p.team >= S.setupCount) p.team = null; });
     }
     if ([0, 20, 30, 45].includes(v.time)) S.timeLimit = v.time;
+    if ([0, 1, 2].includes(v.open)) S.openMode = v.open;
     if (Array.isArray(v.names)) S.setupNames = DEFAULT_NAMES.map((d, k) => typeof v.names[k] === 'string' ? v.names[k].slice(0, 24) : S.setupNames[k]);
     changed();
   }
@@ -128,7 +135,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     let msg;
     if (Number.isInteger(v.vote)) {
       const q = S.q;
-      if (S.phase !== 'question' || !q || q.id !== v.q || q.picked !== null || team !== S.turn || pid === S.roller || !q.options[v.vote]) return;
+      if (S.phase !== 'question' || !q || q.id !== v.q || q.picked !== null || q.open || team !== S.turn || pid === S.roller || !q.options[v.vote]) return;
       msg = {kind:'vote', q:q.id, i:v.vote, text:q.options[v.vote]};
     } else {
       const text = String(v.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
@@ -149,7 +156,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     // Vuelve a la sala con los mismos equipos y jugadores.
     timers.forEach(clearTimeout); timers.clear();
     const players = S.players.filter(p => p.online).map(p => ({...p, team:p.team !== null && S.teams[p.team] ? S.teams[p.team].setup : p.team}));
-    const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, players, hostPid:S.hostPid};
+    const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, openMode:S.openMode, players, hostPid:S.hostPid};
     S = Object.assign(freshState(), keep);
     changed();
   }
@@ -239,16 +246,19 @@ export function createGame({hooks, saved = null, times = {}}) {
   function ask(cat, kind) {
     const q = QUESTIONS[cat][draw(cat)];
     S.qn++;
-    S.q = {id:S.qn, shownAt:Date.now(), cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null,
+    const open = canBeOpen(q[1]) && (S.openMode === 2 || (S.openMode === 1 && Math.random() < 1 / 3));
+    S.q = {id:S.qn, shownAt:Date.now(), cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null, open,
            deadline:S.timeLimit ? Date.now() + S.timeLimit * 1000 : null};
     S.phase = 'question';
     changed();
   }
-  function answer(i) {
+  // i: opción elegida (-1 si se acaba el tiempo). En las preguntas para escribir, text es lo que se ha escrito.
+  function answer(i, text) {
     const q = S.q;
     if (S.phase !== 'question' || !q || q.picked !== null) return;
     q.picked = i;
-    q.ok = i >= 0 && q.options[i] === q.answer;
+    if (q.open) { q.given = i >= 0 ? text : ''; q.ok = i >= 0 && judge(text, q.answer); }
+    else q.ok = i >= 0 && q.options[i] === q.answer;
     if (q.ok && q.kind === 'wedge') S.teams[S.turn].wedges[q.cat] = true;
     if (q.kind === 'final') {
       if (q.ok) S.final.ok++; else S.final.ko++;
@@ -297,9 +307,10 @@ export function createGame({hooks, saved = null, times = {}}) {
       teamPlayers(S, S.turn).filter(p => p.bot && !votedQ.has(q.id + p.pid)).forEach(p => {
         if (now - (q.shownAt || 0) < T.botVote) return;
         votedQ.add(q.id + p.pid);
-        const right = q.options.indexOf(q.answer);
+        const right = q.options.indexOf(q.answer), knows = Math.random() < .65;
+        if (q.open) return postChat(p.pid, {text:knows ? `Yo diría «${q.answer}»` : 'Ni idea, lo siento'});
         postChat(p.pid, {text:Math.random() < .5 ? '¡Creo que lo sé!' : 'Mmm… yo diría esta'});
-        postChat(p.pid, {vote:Math.random() < .65 ? right : rnd(4), q:q.id});
+        postChat(p.pid, {vote:knows ? right : rnd(4), q:q.id});
       });
     }
     // ¿Qué tiene que hacer un bot ahora?
@@ -313,7 +324,11 @@ export function createGame({hooks, saved = null, times = {}}) {
         const good = S.dests.find(c => CELLS[c].type === 'hq' && !t.wedges[CELLS[c].cat]);
         v = good !== undefined ? good : S.dests[rnd(S.dests.length)];
       }
-      else if (S.phase === 'question' && q && q.picked === null) { a = 'answer'; v = {q:q.id, i:Math.random() < .65 ? q.options.indexOf(q.answer) : rnd(4)}; }
+      else if (S.phase === 'question' && q && q.picked === null) {
+        a = 'answer';
+        const knows = Math.random() < .65;
+        v = q.open ? {q:q.id, text:knows ? q.answer : 'Ni idea'} : {q:q.id, i:knows ? q.options.indexOf(q.answer) : rnd(4)};
+      }
       else if (S.phase === 'question' && q) { a = 'cont'; v = q.id; }
       else if (S.phase === 'final') a = 'final';
     }
@@ -362,6 +377,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     P.players.forEach(p => delete p.leftAt);
     if (P.q) {
       if (P.q.picked === null) delete P.q.answer;
+      if (P.q.open) delete P.q.options; // sin opciones: hay que escribir la respuesta
       P.q.left = S.q.deadline ? Math.max(0, S.q.deadline - Date.now()) : null;
       delete P.q.deadline;
     }

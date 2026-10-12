@@ -411,6 +411,9 @@ function renderLobby() {
       `<div class="field"><label>Nombres de los equipos</label><div class="names">${names}</div></div>` +
       `<div class="field"><label>Tiempo para responder</label><div class="seg" id="timeSeg">` +
         [[0,'Libre'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div>` +
+      `<div class="field"><label>Preguntas para escribir</label><div class="seg" id="openSeg">` +
+        [[0,'Ninguna'],[1,'Algunas'],[2,'Todas']].map(([v,l]) => `<button aria-pressed="${v === S.openMode}" data-v="${v}">${l}</button>`).join('') + `</div>` +
+        `<p class="hint">Sin opciones: hay que escribir la respuesta.${S.openMode === 1 ? ' Más o menos 1 de cada 3.' : ''}</p></div>` +
       `<div class="field"><label>Bots para practicar</label><div class="seg" id="botSeg">` +
         Array.from({length:S.setupCount}, (_, k) => `<button data-k="${k}" title="Añadir un bot al equipo ${k+1}"><span class="dot mini" style="background:${TEAM_COLORS[k].c}"></span>+ Bot</button>`).join('') + `</div>` +
         (S.players.some(p => p.bot) ? `<button class="link linkbtn" id="clearBots">Quitar todos los bots</button>` : `<p class="hint">Juegan solos cuando les toca.</p>`) +
@@ -464,6 +467,7 @@ function renderLobby() {
   }));
   $('countSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('setup', {count:+b.dataset.n}); };
   $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('setup', {time:+b.dataset.v}); };
+  $('openSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('setup', {open:+b.dataset.v}); };
   $('startBtn').onclick = () => act('start');
   $('botSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('addBot', +b.dataset.k); };
   if ($('clearBots')) $('clearBots').onclick = () => act('clearBots');
@@ -557,9 +561,9 @@ function drawQuestion() {
   const q = S.q, cat = CATS[q.cat], t = S.teams[S.turn], mine = canAct('answer');
   const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' && S.final ? `Ronda final · ${S.final.idx + 1} de 6` : '';
   const teammate = !mine && myTeam() === S.turn && q.picked === null; // compañero: puede proponer
-  const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine || teammate ? '' : ' disabled'}><kbd>${'ABCD'[i]}</kbd><span>${esc(o)}</span></button>`).join('');
+  const opts = q.open ? '' : q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine || teammate ? '' : ' disabled'}><kbd>${'ABCD'[i]}</kbd><span>${esc(o)}</span></button>`).join('');
   const withChat = myTeam() === S.turn && teamPlayers(S.turn).length > 1;
-  const who = teammate ? `Responde <b>${esc(playerName(S.roller))}</b> · pulsa una opción para proponérsela`
+  const who = teammate ? `Responde <b>${esc(playerName(S.roller))}</b> · ${q.open ? (withChat ? 'proponle tu respuesta en el chat' : 'escribe la respuesta') : 'pulsa una opción para proponérsela'}`
     : S.roller === NET.pid ? (withChat ? '<b>Respondes tú</b> · mira lo que te propone tu equipo' : '<b>Respondes tú</b>')
     : S.roller ? `Responde <b>${esc(playerName(S.roller))}</b> (${esc(t.name)})` : `Responde <b>${esc(t.name)}</b>`;
   openModal(
@@ -567,12 +571,17 @@ function drawQuestion() {
       `${tag ? `<span class="tag">${tag}</span>` : ''}${S.timeLimit && q.picked === null ? `<span class="tnum" id="tnum" style="color:${cat.color}" aria-label="Segundos restantes"></span>` : ''}</div>` +
     (S.timeLimit ? `<div class="timer"><i id="tbar"></i></div>` : '') +
     `<div class="qbody${withChat ? ' with-chat' : ''}"><div class="qmain">${q.kind === 'final' ? finalTrack() : ''}<p class="qteam">${who}</p><h2 class="qtext">${esc(q.text)}</h2>` +
-    `<div class="opts" id="opts">${opts}</div></div>` +
+    (q.open ? openForm(q, mine) : `<div class="opts" id="opts">${opts}</div>`) + `</div>` +
     (withChat ? `<section class="qchat chat" id="qchat"></section>` : '') +
     `<div class="qfoot"><p class="verdict" id="verdict"></p><button class="btn primary" id="contBtn" hidden>Continuar</button></div></div>`,
     !withChat
   );
-  $('opts').onclick = e => {
+  if ($('openForm')) $('openForm').onsubmit = e => {
+    e.preventDefault();
+    const text = $('openInput').value.trim();
+    if (text && canAct('answer')) act('answer', {q:q.id, text});
+  };
+  if ($('opts')) $('opts').onclick = e => {
     const b = e.target.closest('.opt'); if (!b || b.disabled) return;
     if (canAct('answer')) act('answer', {q:q.id, i:+b.dataset.i});
     else act('chat', {vote:+b.dataset.i, q:q.id});
@@ -581,7 +590,7 @@ function drawQuestion() {
   clearInterval(timerId);
   renderChat();
   if (q.picked !== null) return showVerdict();
-  if (mine) $('opts').querySelector('.opt').focus({preventScroll:true});
+  if (mine) (q.open ? $('openInput') : $('opts').querySelector('.opt')).focus({preventScroll:true});
   if (S.timeLimit) {
     const tick = () => {
       if (!S.q || !S.q.deadline) return;
@@ -594,9 +603,22 @@ function drawQuestion() {
     timerId = setInterval(tick, 100);
   }
 }
+// Pregunta para escribir: un cuadro de texto en vez de opciones (solo escribe quien responde).
+function openForm(q, mine) {
+  return `<form class="openans" id="openForm" autocomplete="off"><input id="openInput" maxlength="60" enterkeyhint="send" ` +
+    `placeholder="${mine ? 'Escribe la respuesta' : 'Solo escribe quien responde'}" aria-label="Tu respuesta"${mine ? '' : ' disabled'}>` +
+    `<button class="btn primary" id="openBtn"${mine ? '' : ' disabled'}>Responder</button></form>`;
+}
 function showVerdict() {
   const q = S.q, t = S.teams[S.turn];
-  $('opts').querySelectorAll('.opt').forEach((b, k) => {
+  if (q.open) {
+    const f = $('openForm');
+    if (f) f.outerHTML = `<div class="openres">` +
+      (q.picked >= 0 ? `<p class="${q.ok ? 'right' : 'wrong'}"><span>${S.roller === NET.pid ? 'Tu respuesta' : 'Han respondido'}</span>${esc(q.given)}</p>` : '') +
+      (q.ok ? '' : `<p class="right"><span>Respuesta correcta</span>${esc(q.answer)}</p>`) +
+      (q.ok && q.given && q.given.trim().toLowerCase() !== q.answer.toLowerCase() ? `<p class="hint">Respuesta completa: ${esc(q.answer)}</p>` : '') + `</div>`;
+  }
+  if ($('opts')) $('opts').querySelectorAll('.opt').forEach((b, k) => {
     b.disabled = true;
     if (q.options[k] === q.answer) b.classList.add('right');
     else if (k === q.picked) b.classList.add('wrong');
@@ -649,7 +671,7 @@ function drawWin() {
 document.addEventListener('keydown', e => {
   if (!S || inLobby() || e.target.matches('input')) return;
   const k = /^[1-4]$/.test(e.key) ? +e.key - 1 : 'abcd'.indexOf(e.key.toLowerCase());
-  if (S.phase === 'question' && S.q && S.q.picked === null && e.key.length === 1 && k >= 0 && canAct('answer')) act('answer', {q:S.q.id, i:k});
+  if (S.phase === 'question' && S.q && !S.q.open && S.q.picked === null && e.key.length === 1 && k >= 0 && canAct('answer')) act('answer', {q:S.q.id, i:k});
   else if (S.phase === 'roll' && $('modal').hidden && (e.key === ' ' || e.key === 'Enter') && !e.target.closest('button,.cell')) { e.preventDefault(); act('roll'); }
 });
 
