@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quesitos</title>
+<meta name="description" content="El trivial para jugar con tus amigos, cada uno desde su pantalla.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<section class="home" id="home" hidden></section>
+
+<section class="lobbyscr" id="lobby" hidden></section>
+
+<main class="app" id="app" hidden>
+  <div class="board" id="board">
+    <svg viewBox="0 0 1000 1000" role="img" aria-label="Tablero de juego">
+      <circle cx="500" cy="500" r="499" fill="var(--felt)"></circle>
+      <g id="cells"></g>
+      <g id="pieces"></g>
+    </svg>
+    <div class="hub" id="hub" aria-live="polite"></div>
+  </div>
+
+  <aside class="side">
+    <div class="sidehead"><h1 class="brand">Quesitos</h1><div class="status" id="sidestatus"></div></div>
+    <section class="panel" id="sidepanel"></section>
+    <section class="panel chat" id="chatpanel" hidden></section>
+    <section class="panel room" id="roompanel"></section>
+    <section class="panel">
+      <h2>Categorías</h2>
+      <div class="legend" id="legend"></div>
+      <details>
+        <summary>Cómo se juega</summary>
+        <ul>
+          <li>Tira el dado y elige una de las dos casillas que parpadean (puedes ir hacia delante o hacia atrás).</li>
+          <li>Responde la pregunta del color de la casilla. Si aciertas, vuelves a tirar. Si fallas, pasa el turno.</li>
+          <li>Las casillas grandes con un quesito dan quesito si aciertas.</li>
+          <li>Las casillas blancas ↻ te dejan tirar otra vez.</li>
+          <li>Con los 6 quesitos, el resto de equipos elige la categoría de tu pregunta final. Si aciertas, ganas.</li>
+          <li>Cada uno juega desde su ordenador o su móvil. En cada turno de un equipo tira y responde uno de sus jugadores, por orden; los demás pueden ayudarle.</li>
+          <li>Cada equipo tiene su chat privado. Mientras responde un compañero, pulsa una opción para proponérsela.</li>
+          <li>Teclado: A–D o 1–4 para responder, Intro para continuar.</li>
+        </ul>
+      </details>
+    </section>
+  </aside>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="qcard" id="qcard" role="dialog" aria-modal="true" aria-labelledby="qtitle"></div>
+</div>
+
+</body>
+</html>

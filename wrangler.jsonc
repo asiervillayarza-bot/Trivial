@@ -1,0 +1,18 @@
+// Configuración de Cloudflare: un Worker que sirve la web (public/) y las salas de juego (Durable Objects).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "trivial",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [{"name": "SALAS", "class_name": "Sala"}]
+  },
+  "migrations": [
+    {"tag": "v1", "new_sqlite_classes": ["Sala"]}
+  ],
+  "observability": {"enabled": true}
+}

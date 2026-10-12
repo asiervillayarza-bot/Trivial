@@ -1,0 +1,30 @@
+# Pruebas automáticas en cada cambio: el motor de la partida y una partida completa con navegadores simulados.
+name: Pruebas
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Motor de la partida
+        run: npm test
+      - name: Navegador para la prueba completa
+        run: npx playwright-core install --with-deps chromium
+      - name: Partida completa contra el servidor local
+        run: |
+          npx wrangler dev --ip 127.0.0.1 --port 8787 > wrangler.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8787/ > /dev/null && break; sleep 1; done
+          npm run test:e2e
+      - name: Registro del servidor (si algo falla)
+        if: failure()
+        run: cat wrangler.log
