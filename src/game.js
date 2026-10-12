@@ -227,7 +227,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     t.pos = S.target;
     const c = CELLS[t.pos];
     if (c.type === 'again') {
-      S.phase = 'roll'; S.msg = '¡Casilla ↻! Tira otra vez.';
+      S.phase = 'roll'; S.msg = '¡Casilla del dado! Tira otra vez.';
       return changed();
     }
     ask(c.cat, c.type === 'hq' && !t.wedges[c.cat] ? 'wedge' : 'normal');
