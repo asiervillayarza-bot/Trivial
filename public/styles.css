@@ -191,7 +191,8 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 .team .jointeam{grid-column:2;grid-row:3;justify-self:start}
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:14px}
 .legend div{display:flex;align-items:center;gap:8px}
-.legend b{width:14px;height:14px;border-radius:4px;flex:none}
+.legend b{width:24px;height:24px;border-radius:7px;flex:none;display:grid;place-items:center}
+.legend b svg{width:16px;height:16px}
 .room .linkrow input{font-size:13px}
 
 /* Chat de equipo */

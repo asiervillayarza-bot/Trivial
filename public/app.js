@@ -95,6 +95,10 @@ const CAT_ICONS = [
 ];
 const catIcon = (k, color) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CAT_ICONS[k]}</svg>`;
 const BOT_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01"/></svg>';
+// Dado pequeño para las casillas de «tira otra vez» (24×24, como los iconos).
+const DIE_ICON = '<rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="#fff" stroke="currentColor" stroke-width="2"/>' +
+  '<circle cx="8" cy="8" r="1.9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.9" fill="currentColor" stroke="none"/>';
+const dieIcon = () => `<svg viewBox="0 0 24 24" aria-hidden="true" style="color:var(--neutral-ink)">${DIE_ICON}</svg>`;
 const initial = n => (String(n || '?').trim()[0] || '?').toUpperCase();
 
 /* ---------- Tablero ---------- */
@@ -115,12 +119,19 @@ function buildBoard() {
     const fill = c.type === 'again' ? 'var(--neutral)' : CATS[c.cat].color;
     const label = c.type === 'again' ? 'Tira otra vez' : (hq ? 'Quesito de ' : '') + CATS[c.cat].name;
     html += `<path class="cell" data-i="${i}" d="${arcPath(hq ? 342 : 372, hq ? 497 : 482, a0, a1)}" fill="${fill}"><title>${label}</title></path>`;
+    // Dibujo de cada casilla: icono de la categoría, medallón en las de quesito y un dado en las de «tira otra vez».
     const [x, y] = polar(hq ? 420 : 427, ac);
+    const icon = (size, color, body, sw = 2, extra = '') =>
+      `<g transform="translate(${f(x - size / 2)} ${f(y - size / 2)}) scale(${f(size / 24)})" fill="none" stroke="${color}" stroke-width="${sw}" ` +
+      `stroke-linecap="round" stroke-linejoin="round" pointer-events="none"${extra}>${body}</g>`;
     if (hq) {
-      html += `<g pointer-events="none"><circle cx="${f(x)}" cy="${f(y)}" r="24" fill="none" stroke="#fff" stroke-width="4"/>` +
-              `<path d="${sector(+f(x), +f(y), 24, -120, -60)}" fill="#fff"/></g>`;
+      html += `<circle cx="${f(x)}" cy="${f(y)}" r="33" fill="#fff" pointer-events="none"/>` +
+              `<circle cx="${f(x)}" cy="${f(y)}" r="33" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="3" pointer-events="none"/>` +
+              icon(40, CATS[c.cat].color, CAT_ICONS[c.cat], 2.4);
     } else if (c.type === 'again') {
-      html += `<text x="${f(x)}" y="${f(y)}" text-anchor="middle" dominant-baseline="central" font-size="34" font-weight="800" fill="var(--neutral-ink)" pointer-events="none">↻</text>`;
+      html += `<g transform="rotate(${f(ac + 90 - 12)} ${f(x)} ${f(y)})" style="color:var(--neutral-ink)" pointer-events="none">` + icon(36, 'currentColor', DIE_ICON) + `</g>`;
+    } else {
+      html += icon(32, CATS[c.cat].ink, CAT_ICONS[c.cat], 2, ' opacity=".9"');
     }
   });
   $('cells').innerHTML = html;
@@ -664,8 +675,8 @@ function showHome() {
   };
 }
 function buildLegend() {
-  $('legend').innerHTML = CATS.map(c => `<div><b style="background:${c.color}"></b>${c.name}</div>`).join('') +
-    `<div><b style="background:var(--neutral)"></b>↻ Tira otra vez</div>`;
+  $('legend').innerHTML = CATS.map((c, k) => `<div><b style="background:${c.color}">${catIcon(k, c.ink)}</b>${c.name}</div>`).join('') +
+    `<div><b style="background:var(--neutral)">${dieIcon()}</b>Tira otra vez</div>`;
 }
 
 /* ---------- Arranque ---------- */
