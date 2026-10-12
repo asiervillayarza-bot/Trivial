@@ -630,9 +630,9 @@ function showVerdict() {
 function finalTrack() {
   const F = S.final;
   return `<div class="ftrack" aria-label="Ronda final: ${F.ok} aciertos y ${F.ko} fallos">` + F.cats.map((k, n) => {
-    const res = n < F.idx ? (F.res && F.res[n]) : null;
-    const st = n < F.idx ? (res ? 'ok' : 'ko') : n === F.idx ? 'now' : '';
-    return `<span class="${st}" style="--c:${CATS[k].color};--i:${CATS[k].ink}" title="${CATS[k].name}">${catIcon(k, n === F.idx || n > F.idx ? CATS[k].ink : '#fff')}</span>`;
+    const done = n < F.res.length; // ya respondida (también la actual, en cuanto se contesta)
+    const st = done ? (F.res[n] ? 'ok' : 'ko') : n === F.idx ? 'now' : '';
+    return `<span class="${st}" title="${CATS[k].name}" style="--c:${CATS[k].color}">${catIcon(k, done ? '#fff' : CATS[k].ink)}</span>`;
   }).join('') + `<b>${F.ok}/4</b></div>`;
 }
 function drawWin() {
