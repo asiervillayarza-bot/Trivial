@@ -5,7 +5,7 @@
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
   "workers_dev": true,     // la web se publica en https://trivial.<subdominio>.workers.dev
-  "preview_urls": true,
+  "preview_urls": false,   // Cloudflare no admite enlaces de prueba en Workers con Durable Objects
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"

@@ -367,7 +367,12 @@ function renderLobby() {
   // Tú
   const meSec = `<section class="panel lob-me"><label class="eyebrow" for="myName">Tu nombre</label>` +
     `<div class="names"><div class="tline"><input id="myName" maxlength="24" placeholder="Escribe tu nombre" value="${esc(myName)}" autocomplete="nickname"${connected ? '' : ' disabled'}></div></div>` +
-    `<p class="hint" id="nameHint">${!myName ? 'Escribe tu nombre para poder elegir equipo.' : mine === null ? 'Ahora elige tu equipo.' : 'Puedes cambiarte de equipo hasta que empiece la partida.'}</p></section>`;
+    `<p class="hint" id="nameHint">${!myName ? 'Escribe tu nombre para poder elegir equipo.' : mine === null ? 'Ahora elige tu equipo.' : 'Puedes cambiarte de equipo hasta que empiece la partida.'}</p>` +
+    (mine !== null && connected ? `<label class="eyebrow" for="myTeamName" style="margin-top:6px">Nombre de tu equipo</label>` +
+      `<div class="names"><div class="tline"><span class="dot" style="background:${TEAM_COLORS[mine].c};color:${TEAM_COLORS[mine].ink}">${mine + 1}</span>` +
+      `<input id="myTeamName" maxlength="24" placeholder="Equipo ${mine + 1}" value="${esc(S.setupNames[mine] || '')}" autocomplete="off"></div></div>` +
+      `<p class="hint">Cualquiera del equipo puede cambiarlo.</p>` : '') +
+    `</section>`;
 
   // Ajustes (solo quien dirige la partida)
   let settings = '';
@@ -413,6 +418,14 @@ function renderLobby() {
     $('nameHint').textContent = NET.name ? 'Ahora elige tu equipo.' : 'Escribe tu nombre para poder elegir equipo.';
     clearTimeout(deb); deb = setTimeout(() => act('name', NET.name), 300);
   });
+  if ($('myTeamName')) {
+    let tdeb;
+    $('myTeamName').addEventListener('input', e => {
+      const v = e.target.value, card = el.querySelector(`.tcard[data-k="${mine}"] .tname`);
+      if (card) card.textContent = v.trim() || `Equipo ${mine + 1}`;
+      clearTimeout(tdeb); tdeb = setTimeout(() => act('teamName', {name:v}), 300);
+    });
+  }
   el.querySelectorAll('.tcard').forEach(b => b.onclick = () => {
     if (!NET.name) { inp.focus(); inp.classList.add('need'); return; }
     if (!meP || meP.name !== NET.name) act('name', NET.name);

@@ -18,6 +18,8 @@ async function player(name, viewport = {width:1280, height:860}) {
   return p;
 }
 const state = p => p.evaluate(() => window.__quesitos && window.__quesitos());
+// Pulsa una de las casillas que parpadean (las casillas son arcos: un clic en el centro de su recuadro puede caer fuera).
+const pickCell = p => p.waitForSelector('.cell.dest').then(() => p.evaluate(() => document.querySelector('.cell.dest').dispatchEvent(new MouseEvent('click', {bubbles:true}))));
 
 try {
   // Ane crea la partida
@@ -44,6 +46,10 @@ try {
   await W(600);
   assert.deepEqual(await ane.$$eval('.tcard[data-k="0"] .avatar > span', els => els.map(e => e.textContent.replace('★ ', ''))), ['Ane (tú)', 'Jon']);
   assert.equal(await jon.$('#startBtn'), null, 'solo quien crea la partida la puede empezar');
+  // Cualquiera del equipo puede cambiar su nombre
+  await jon.fill('#myTeamName', 'Los Txapeldunak'); await W(900);
+  assert.equal(await ane.textContent('.tcard[data-k="0"] .tname'), 'Los Txapeldunak');
+  assert.equal(await mikel.textContent('.tcard[data-k="0"] .tname'), 'Los Txapeldunak');
   // (Los bots se prueban en tests/game.test.js: aquí solo personas, para que la partida avance a un ritmo fijo.)
   await ane.click('#startBtn'); await W(800);
 
@@ -61,8 +67,9 @@ try {
       for (const [n, p] of Object.entries(pages)) assert.equal(!!(await p.$('#rollBtn')), n === roller.name, `${n}: botón de tirar`);
       await pl.click('#rollBtn'); await W(1000);
       for (const [n, p] of Object.entries(pages)) if (n !== roller.name) assert.equal((await p.$$('.cell.dest')).length, 0, `${n}: no elige casilla`);
-      const dests = await pl.$$('.cell.dest');
-      await dests[0].click({force:true}); await W(1600);
+      await pickCell(pl); await W(1600);
+    } else if (st.phase === 'choose') {
+      await pickCell(pl); await W(1600);
     } else if (st.phase === 'question' && st.q.picked === null) {
       for (const p of Object.values(pages)) assert.equal((await state(p)).q.answer, undefined, 'la respuesta no llega antes de contestar');
       if (!chatChecked && roller.name !== 'Mikel') {

@@ -40,6 +40,7 @@ export function allowed(S, pid, a) {
   if (['setup', 'start', 'addBot', 'clearBots'].includes(a)) return pid === S.hostPid && S.phase === 'setup';
   if (a === 'reset') return pid === S.hostPid && S.phase !== 'setup';
   if (a === 'team' || a === 'name') return S.phase === 'setup' || playerTeam(S, pid) === null;
+  if (a === 'teamName') return S.phase === 'setup' && playerTeam(S, pid) !== null; // cualquiera del equipo puede renombrarlo
   const team = playerTeam(S, pid);
   if (a === 'chat') return S.phase !== 'setup' && team !== null;
   if (team === null || !S.teams[team]) return false;
