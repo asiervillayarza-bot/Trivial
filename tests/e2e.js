@@ -55,7 +55,7 @@ try {
 
   const pages = {Ane:ane, Jon:jon, Mikel:mikel};
   const turns = [];
-  let chatChecked = false;
+  let chatChecked = false, openSeen = false;
   const end = Date.now() + 180000;
   while (Date.now() < end && (turns.length < 6 || !chatChecked)) {
     const st = await state(ane);
@@ -72,7 +72,7 @@ try {
       await pickCell(pl); await W(1600);
     } else if (st.phase === 'question' && st.q.picked === null) {
       for (const p of Object.values(pages)) assert.equal((await state(p)).q.answer, undefined, 'la respuesta no llega antes de contestar');
-      if (!chatChecked && roller.name !== 'Mikel') {
+      if (!chatChecked && roller.name !== 'Mikel' && !st.q.open) {
         chatChecked = true;
         const mate = roller.name === 'Ane' ? jon : ane;
         await mate.fill('#qchat input', 'Yo diría la C'); await mate.press('#qchat input', 'Enter');
@@ -81,7 +81,12 @@ try {
         assert.ok(await pl.$('.opt[data-i="2"] .votes'), 'la propuesta aparece en la opción');
         assert.doesNotMatch(await mikel.textContent('#chatpanel .chatlog'), /Yo diría/, 'el otro equipo no ve el chat');
       }
-      await pl.click('.opt[data-i="0"]'); await W(500);
+      if (st.q.open) { // pregunta para escribir: sin opciones
+        openSeen = true;
+        assert.equal(await pl.$('.opt'), null, 'no hay opciones');
+        await pl.fill('#openInput', 'No lo sé'); await pl.press('#openInput', 'Enter'); await W(500);
+        assert.ok(await pl.$('.openres .right'), 'se ve la respuesta correcta');
+      } else { await pl.click('.opt[data-i="0"]'); await W(500); }
       assert.notEqual((await state(ane)).q.answer, undefined, 'tras contestar se ve la respuesta');
       await pl.click('#contBtn'); await W(500);
     } else await W(400);
@@ -96,7 +101,7 @@ try {
   assert.notEqual(after.phase, 'setup');
   assert.equal(after.players.filter(p => p.online && !p.bot).length, 3);
   assert.deepEqual(errors, []);
-  console.log(`OK · sala ${code} · turnos: ${turns.join(', ')}`);
+  console.log(`OK · sala ${code} · turnos: ${turns.join(', ')}${openSeen ? ' · con preguntas para escribir' : ''}`);
 } catch (e) {
   console.error(errors.length ? 'Errores en la página:\n' + errors.join('\n') : '');
   throw e;

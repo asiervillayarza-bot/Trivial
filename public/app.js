@@ -246,8 +246,7 @@ function renderHub() {
   }
   if (S.phase === 'choose' && !isRoller) msg = `${roller || t.name} está eligiendo casilla.`;
   if (S.phase === 'final') {
-    if (canAct('final') && !S.picking) action = `<button class="btn primary" id="finalBtn">Pregunta final</button>`;
-    else if (S.picking) msg = canAct('cat') ? 'Elegid la categoría de su pregunta final.' : 'Los demás equipos están eligiendo la categoría.';
+    if (canAct('final')) action = `<button class="btn primary" id="finalBtn">Ronda final</button>`;
   }
   hub.innerHTML =
     `<div class="label">${isRoller ? '¡Te toca!' : mine ? 'Le toca a tu equipo' : 'Turno de'}</div>` +
@@ -412,6 +411,9 @@ function renderLobby() {
       `<div class="field"><label>Nombres de los equipos</label><div class="names">${names}</div></div>` +
       `<div class="field"><label>Tiempo para responder</label><div class="seg" id="timeSeg">` +
         [[0,'Libre'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div>` +
+      `<div class="field"><label>Preguntas para escribir</label><div class="seg" id="openSeg">` +
+        [[0,'Ninguna'],[1,'Algunas'],[2,'Todas']].map(([v,l]) => `<button aria-pressed="${v === S.openMode}" data-v="${v}">${l}</button>`).join('') + `</div>` +
+        `<p class="hint">Sin opciones: hay que escribir la respuesta.${S.openMode === 1 ? ' Más o menos 1 de cada 3.' : ''}</p></div>` +
       `<div class="field"><label>Bots para practicar</label><div class="seg" id="botSeg">` +
         Array.from({length:S.setupCount}, (_, k) => `<button data-k="${k}" title="Añadir un bot al equipo ${k+1}"><span class="dot mini" style="background:${TEAM_COLORS[k].c}"></span>+ Bot</button>`).join('') + `</div>` +
         (S.players.some(p => p.bot) ? `<button class="link linkbtn" id="clearBots">Quitar todos los bots</button>` : `<p class="hint">Juegan solos cuando les toca.</p>`) +
@@ -465,6 +467,7 @@ function renderLobby() {
   }));
   $('countSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('setup', {count:+b.dataset.n}); };
   $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('setup', {time:+b.dataset.v}); };
+  $('openSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('setup', {open:+b.dataset.v}); };
   $('startBtn').onclick = () => act('start');
   $('botSeg').onclick = e => { const b = e.target.closest('button'); if (b) act('addBot', +b.dataset.k); };
   if ($('clearBots')) $('clearBots').onclick = () => act('clearBots');
@@ -546,36 +549,39 @@ function renderModal() {
   if (S.phase !== 'won') winClosed = false;
   let key = '';
   if (S.phase === 'question' && S.q) key = `q${S.q.id}:${S.q.picked}:${canAct('answer')}:${myTeam()}`;
-  else if (S.phase === 'final' && S.picking) key = 'pick:' + canAct('cat');
   else if (S.phase === 'won' && !winClosed) key = 'won';
   if (key === modalKey) return;
   modalKey = key;
   if (!key) closeModal();
   else if (key[0] === 'q') drawQuestion();
-  else if (key[0] === 'p') drawPicker();
   else drawWin();
 }
 
 function drawQuestion() {
   const q = S.q, cat = CATS[q.cat], t = S.teams[S.turn], mine = canAct('answer');
-  const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' ? 'Pregunta final' : '';
+  const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' && S.final ? `Ronda final · ${S.final.idx + 1} de 6` : '';
   const teammate = !mine && myTeam() === S.turn && q.picked === null; // compañero: puede proponer
-  const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine || teammate ? '' : ' disabled'}><kbd>${'ABCD'[i]}</kbd><span>${esc(o)}</span></button>`).join('');
+  const opts = q.open ? '' : q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine || teammate ? '' : ' disabled'}><kbd>${'ABCD'[i]}</kbd><span>${esc(o)}</span></button>`).join('');
   const withChat = myTeam() === S.turn && teamPlayers(S.turn).length > 1;
-  const who = teammate ? `Responde <b>${esc(playerName(S.roller))}</b> · pulsa una opción para proponérsela`
+  const who = teammate ? `Responde <b>${esc(playerName(S.roller))}</b> · ${q.open ? (withChat ? 'proponle tu respuesta en el chat' : 'escribe la respuesta') : 'pulsa una opción para proponérsela'}`
     : S.roller === NET.pid ? (withChat ? '<b>Respondes tú</b> · mira lo que te propone tu equipo' : '<b>Respondes tú</b>')
     : S.roller ? `Responde <b>${esc(playerName(S.roller))}</b> (${esc(t.name)})` : `Responde <b>${esc(t.name)}</b>`;
   openModal(
     `<div class="qhead" style="background:${cat.color};color:${cat.ink}">${catIcon(q.cat, cat.ink)}<span class="cat" id="qtitle">${cat.name}</span>` +
       `${tag ? `<span class="tag">${tag}</span>` : ''}${S.timeLimit && q.picked === null ? `<span class="tnum" id="tnum" style="color:${cat.color}" aria-label="Segundos restantes"></span>` : ''}</div>` +
     (S.timeLimit ? `<div class="timer"><i id="tbar"></i></div>` : '') +
-    `<div class="qbody${withChat ? ' with-chat' : ''}"><div class="qmain"><p class="qteam">${who}</p><h2 class="qtext">${esc(q.text)}</h2>` +
-    `<div class="opts" id="opts">${opts}</div></div>` +
+    `<div class="qbody${withChat ? ' with-chat' : ''}"><div class="qmain">${q.kind === 'final' ? finalTrack() : ''}<p class="qteam">${who}</p><h2 class="qtext">${esc(q.text)}</h2>` +
+    (q.open ? openForm(q, mine) : `<div class="opts" id="opts">${opts}</div>`) + `</div>` +
     (withChat ? `<section class="qchat chat" id="qchat"></section>` : '') +
     `<div class="qfoot"><p class="verdict" id="verdict"></p><button class="btn primary" id="contBtn" hidden>Continuar</button></div></div>`,
     !withChat
   );
-  $('opts').onclick = e => {
+  if ($('openForm')) $('openForm').onsubmit = e => {
+    e.preventDefault();
+    const text = $('openInput').value.trim();
+    if (text && canAct('answer')) act('answer', {q:q.id, text});
+  };
+  if ($('opts')) $('opts').onclick = e => {
     const b = e.target.closest('.opt'); if (!b || b.disabled) return;
     if (canAct('answer')) act('answer', {q:q.id, i:+b.dataset.i});
     else act('chat', {vote:+b.dataset.i, q:q.id});
@@ -584,7 +590,7 @@ function drawQuestion() {
   clearInterval(timerId);
   renderChat();
   if (q.picked !== null) return showVerdict();
-  if (mine) $('opts').querySelector('.opt').focus({preventScroll:true});
+  if (mine) (q.open ? $('openInput') : $('opts').querySelector('.opt')).focus({preventScroll:true});
   if (S.timeLimit) {
     const tick = () => {
       if (!S.q || !S.q.deadline) return;
@@ -597,9 +603,22 @@ function drawQuestion() {
     timerId = setInterval(tick, 100);
   }
 }
+// Pregunta para escribir: un cuadro de texto en vez de opciones (solo escribe quien responde).
+function openForm(q, mine) {
+  return `<form class="openans" id="openForm" autocomplete="off"><input id="openInput" maxlength="60" enterkeyhint="send" ` +
+    `placeholder="${mine ? 'Escribe la respuesta' : 'Solo escribe quien responde'}" aria-label="Tu respuesta"${mine ? '' : ' disabled'}>` +
+    `<button class="btn primary" id="openBtn"${mine ? '' : ' disabled'}>Responder</button></form>`;
+}
 function showVerdict() {
   const q = S.q, t = S.teams[S.turn];
-  $('opts').querySelectorAll('.opt').forEach((b, k) => {
+  if (q.open) {
+    const f = $('openForm');
+    if (f) f.outerHTML = `<div class="openres">` +
+      (q.picked >= 0 ? `<p class="${q.ok ? 'right' : 'wrong'}"><span>${S.roller === NET.pid ? 'Tu respuesta' : 'Han respondido'}</span>${esc(q.given)}</p>` : '') +
+      (q.ok ? '' : `<p class="right"><span>Respuesta correcta</span>${esc(q.answer)}</p>`) +
+      (q.ok && q.given && q.given.trim().toLowerCase() !== q.answer.toLowerCase() ? `<p class="hint">Respuesta completa: ${esc(q.answer)}</p>` : '') + `</div>`;
+  }
+  if ($('opts')) $('opts').querySelectorAll('.opt').forEach((b, k) => {
     b.disabled = true;
     if (q.options[k] === q.answer) b.classList.add('right');
     else if (k === q.picked) b.classList.add('wrong');
@@ -607,10 +626,18 @@ function showVerdict() {
   });
   const v = $('verdict');
   let text, btn;
-  if (q.ok) {
+  if (q.kind === 'final' && S.final) {
+    const F = S.final, out = F.ko > 2, nextName = S.teams[(S.turn + 1) % S.teams.length].name;
+    v.className = 'verdict ' + (q.ok ? 'ok' : 'bad');
+    text = S.winner !== null ? `¡Correcto! ${F.ok} de 6: ¡habéis ganado!`
+      : q.ok ? `¡Correcto! Lleváis ${F.ok} de 4.`
+      : out ? `${q.picked === -1 ? 'Se acabó el tiempo' : 'Incorrecto'}. Ya no podéis llegar a 4.`
+      : `${q.picked === -1 ? 'Se acabó el tiempo' : 'Incorrecto'}. Lleváis ${F.ok} de 4 y ${F.ko} ${F.ko === 1 ? 'fallo' : 'fallos'}.`;
+    btn = S.winner !== null ? 'Ver resultado' : out ? `Turno de ${nextName}` : 'Siguiente pregunta';
+  } else if (q.ok) {
     v.className = 'verdict ok';
-    text = q.kind === 'final' ? '¡Correcto! ¡Habéis ganado!' : q.kind === 'wedge' ? '¡Correcto! Quesito conseguido.' : '¡Correcto!';
-    btn = q.kind === 'final' ? 'Ver resultado' : 'Volver a tirar';
+    text = q.kind === 'wedge' ? '¡Correcto! Quesito conseguido.' : '¡Correcto!';
+    btn = 'Volver a tirar';
   } else {
     v.className = 'verdict bad';
     text = q.picked === -1 ? 'Se acabó el tiempo.' : 'Incorrecto.';
@@ -621,17 +648,14 @@ function showVerdict() {
   if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
   else v.insertAdjacentHTML('beforeend', `<span class="wait">Esperando a ${esc(S.roller ? playerName(S.roller) : t.name)}…</span>`);
 }
-function drawPicker() {
-  const t = S.teams[S.turn], mine = canAct('cat');
-  openModal(
-    `<div class="qhead" style="background:var(--felt)">${logoSVG('', '')}<span class="cat" id="qtitle">Pregunta final</span><span class="tag">${esc(t.name)}</span></div>` +
-    `<div class="qbody"><p class="qtext">${mine ? 'Elegid la categoría de su pregunta final' : 'Los demás equipos están eligiendo la categoría…'}</p>` +
-    `<div class="catpick" id="catpick">` +
-      CATS.map((c, k) => `<button data-k="${k}" style="background:${c.color};color:${c.ink}"${mine ? '' : ' disabled'}>${catIcon(k, c.ink)}${c.name}</button>`).join('') +
-    `</div></div>`, true
-  );
-  $('catpick').onclick = e => { const b = e.target.closest('button'); if (b && !b.disabled) act('cat', +b.dataset.k); };
-  if (mine) $('catpick').querySelector('button').focus({preventScroll:true});
+// Marcador de la ronda final: una casilla por categoría con su resultado.
+function finalTrack() {
+  const F = S.final;
+  return `<div class="ftrack" aria-label="Ronda final: ${F.ok} aciertos y ${F.ko} fallos">` + F.cats.map((k, n) => {
+    const done = n < F.res.length; // ya respondida (también la actual, en cuanto se contesta)
+    const st = done ? (F.res[n] ? 'ok' : 'ko') : n === F.idx ? 'now' : '';
+    return `<span class="${st}" title="${CATS[k].name}" style="--c:${CATS[k].color}">${catIcon(k, done ? '#fff' : CATS[k].ink)}</span>`;
+  }).join('') + `<b>${F.ok}/4</b></div>`;
 }
 function drawWin() {
   const t = S.teams[S.winner];
@@ -647,7 +671,7 @@ function drawWin() {
 document.addEventListener('keydown', e => {
   if (!S || inLobby() || e.target.matches('input')) return;
   const k = /^[1-4]$/.test(e.key) ? +e.key - 1 : 'abcd'.indexOf(e.key.toLowerCase());
-  if (S.phase === 'question' && S.q && S.q.picked === null && e.key.length === 1 && k >= 0 && canAct('answer')) act('answer', {q:S.q.id, i:k});
+  if (S.phase === 'question' && S.q && !S.q.open && S.q.picked === null && e.key.length === 1 && k >= 0 && canAct('answer')) act('answer', {q:S.q.id, i:k});
   else if (S.phase === 'roll' && $('modal').hidden && (e.key === ' ' || e.key === 'Enter') && !e.target.closest('button,.cell')) { e.preventDefault(); act('roll'); }
 });
 
