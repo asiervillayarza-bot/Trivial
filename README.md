@@ -54,7 +54,12 @@ npm run test:e2e     # partida completa con navegadores simulados (con «npm run
 
 ### Publicar
 
-Cloudflare está conectado al repositorio: cada cambio que llega a `main` se publica solo. Las pruebas se ejecutan en GitHub en cada cambio.
+Cloudflare está conectado al repositorio:
+
+- **Web de verdad** (`trivial`): se publica sola con cada cambio que llega a `main`.
+- **Web de pruebas** (`trivial-pruebas`): se publica sola con cada cambio de la rama de trabajo (`npx wrangler deploy --env pruebas`), para probar antes de pasar a `main`.
+
+Las pruebas automáticas se ejecutan en GitHub en cada cambio.
 
 El `index.html` de la raíz es la versión anterior (para GitHub Pages, sin servidor) y se mantiene hasta que la nueva esté en marcha.
 

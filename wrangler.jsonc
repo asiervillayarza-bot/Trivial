@@ -16,5 +16,17 @@
   "migrations": [
     {"tag": "v1", "new_sqlite_classes": ["Sala"]}
   ],
-  "observability": {"enabled": true}
+  "observability": {"enabled": true},
+
+  // Web de pruebas (https://trivial-pruebas.<subdominio>.workers.dev): se publica con
+  // «npx wrangler deploy --env pruebas» desde la rama de trabajo, para probar los cambios antes de pasarlos a main.
+  "env": {
+    "pruebas": {
+      "workers_dev": true,
+      "preview_urls": false,
+      "durable_objects": {
+        "bindings": [{"name": "SALAS", "class_name": "Sala"}]
+      }
+    }
+  }
 }
