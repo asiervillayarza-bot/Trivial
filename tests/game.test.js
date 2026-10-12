@@ -2,6 +2,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame} from '../src/game.js';
+import {QUESTIONS} from '../src/questions.js';
 
 const FAST = {roll:0, step:0, bot:0, botAnswer:0, botCont:0, botVote:0, away:50, hostAway:50, setupAway:50};
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -158,4 +159,18 @@ test('los bots juegan solos', async () => {
   }
   assert.ok(t.S().qn > 0, 'se han hecho preguntas');
   t.g.stop();
+});
+
+test('las preguntas están bien formadas: 6 categorías, 4 opciones distintas y sin repetir enunciados', () => {
+  assert.equal(QUESTIONS.length, 6);
+  const seen = new Set();
+  QUESTIONS.forEach((cat, k) => {
+    assert.ok(cat.length >= 20, `categoría ${k}: al menos 20 preguntas`);
+    cat.forEach(q => {
+      assert.equal(q.length, 5, q[0]);
+      assert.equal(new Set(q.slice(1).map(o => o.toLowerCase())).size, 4, `opciones repetidas: ${q[0]}`);
+      assert.ok(!seen.has(q[0]), `pregunta repetida: ${q[0]}`);
+      seen.add(q[0]);
+    });
+  });
 });
