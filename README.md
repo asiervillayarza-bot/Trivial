@@ -1,29 +1,24 @@
 # Trivial
 
-Juego de preguntas por equipos al estilo Trivial para jugar en clase: en un solo ordenador con el proyector, o uniéndose cada uno desde su móvil con un código o un enlace.
+Juego de preguntas por equipos al estilo Trivial para jugar con amigos, cada uno desde su ordenador o su móvil, uniéndose a una sala con un código o un enlace.
 
 ## Cómo jugar
 
-1. Abre `index.html` en el navegador (o la página de GitHub Pages del repositorio) y pulsa **Crear partida**.
-2. Elige de 2 a 6 equipos, sus nombres y el tiempo para responder.
-3. Tira el dado y elige una de las dos casillas que parpadean.
-4. Responde la pregunta del color de la casilla. Si aciertas, vuelves a tirar; si fallas, pasa el turno.
-5. En las casillas grandes ganas un quesito. Con los 6, los demás equipos eligen la categoría de tu pregunta final. Si aciertas, ganas.
+Cada jugador juega desde su ordenador o su móvil.
+
+1. Uno abre el juego (la página de GitHub Pages del repositorio) y pulsa **Crear partida**. Se abre una **sala** con un código de 5 letras y un enlace para invitar a los demás.
+2. Los demás abren el enlace, o abren el juego, pulsan **Unirme a partida** y escriben el código.
+3. En la sala, cada uno escribe su nombre y elige equipo. Quien ha creado la partida elige el número de equipos, sus nombres y el tiempo para responder, y pulsa **Empezar partida** (hacen falta al menos 2 equipos con jugadores; los equipos vacíos no juegan).
+4. En cada turno de un equipo tira **uno de sus jugadores**, por orden: tira el dado, elige una de las dos casillas que parpadean y responde la pregunta del color de la casilla. Los demás lo ven en directo. Si acierta, vuelve a tirar; si falla, pasa el turno al siguiente equipo.
+5. En las casillas grandes se gana un quesito. Con los 6, los demás equipos eligen la categoría de la pregunta final. Si se acierta, ese equipo gana.
 
 Atajos: teclas 1–4 para responder, Intro para continuar.
 
-## Jugar con los móviles
+### Conexión
 
-Al abrir el juego sale una pantalla de inicio con dos opciones: **Crear partida** y **Unirme a partida**. El ordenador del profe (o el del proyector) pulsa «Crear partida» y obtiene una **sala** con un código de 5 letras, un enlace y un QR (panel «Jugar con móviles»).
-
-1. Cada alumno abre el enlace o escanea el QR, o abre el juego, pulsa «Unirme a partida» y escribe el código.
-2. Escribe su nombre y pulsa el equipo al que se quiere unir. El profe ve en su pantalla quién está en cada equipo.
-3. El profe pulsa «Empezar partida». Cuando le toca a un equipo, sus jugadores pueden tirar el dado, elegir casilla y responder desde el móvil; el resto ve la pregunta pero no puede contestar.
-4. El ordenador del profe puede seguir jugando por cualquier equipo (por ejemplo, para los equipos sin móvil).
-
-Si alguien pierde la conexión o recarga la página, vuelve a entrar solo y conserva su equipo. Si el profe recarga, la partida y el código se mantienen.
-
-Para que el enlace funcione en los móviles, el juego tiene que estar publicado en una web (por ejemplo, GitHub Pages); abriendo `index.html` como archivo solo funciona el código. La conexión usa [PeerJS](https://peerjs.com/) (WebRTC) con su servidor público gratuito; no hace falta montar nada. Si en el centro está bloqueado, se puede usar un servidor PeerJS propio añadiendo `?servidor=host:puerto` a la dirección.
+- El navegador de quien crea la partida hace de enlace entre todos: si cierra la página, la partida se corta (si solo la recarga, se recupera con el mismo código).
+- Si alguien pierde la conexión o recarga, vuelve a entrar solo y conserva su equipo. Si un equipo se queda sin nadie conectado, pierde su turno a los 15 segundos.
+- La conexión usa [PeerJS](https://peerjs.com/) (WebRTC). Funciona bien con cada uno en su casa o con datos móviles; en algunas redes (wifi de un centro, VPN) o con dos ventanas en el mismo ordenador puede no conectar. Se puede usar un servidor PeerJS propio añadiendo `?servidor=host:puerto` a la dirección.
 
 ## Añadir preguntas
 
