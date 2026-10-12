@@ -122,6 +122,25 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 .chip.me i,.chip.turn i{color:inherit}
 .team .jointeam{grid-column:2/-1;justify-self:start}
 
+/* Chat de equipo */
+.chat h2{margin:0}
+.chatlog{display:flex;flex-direction:column;gap:6px;max-height:240px;min-height:60px;overflow-y:auto;font-size:14px;background:var(--bg);border-radius:12px;padding:10px}
+.chatlog.compact{max-height:130px}
+.chatlog p{margin:0;overflow-wrap:anywhere}
+.chatlog p b{font-weight:800}
+.chatlog p.own b{color:var(--focus)}
+.chatlog p.vote{color:var(--muted)}
+.chatlog p.vote b{color:var(--ink)}
+.chatlog p.empty{color:var(--muted)}
+.chatform{display:flex;gap:8px;margin:0}
+.chatform input{flex:1;min-width:0;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit;font-size:15px}
+.chatform input:focus{border-color:var(--focus);outline:none}
+.qchat{display:flex;flex-direction:column;gap:8px;background:var(--felt);border-radius:14px;padding:12px}
+.qchat h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.opt{position:relative;flex-wrap:wrap}
+.opt .votes{flex-basis:100%;font-size:13px;font-weight:600;color:var(--focus);padding-left:42px}
+.opt.right .votes,.opt.wrong .votes{color:inherit}
+
 /* Sala de espera */
 .lobbyscr{max-width:1180px;margin:0 auto;padding:20px 16px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
 .lobhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -221,6 +240,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
   <aside class="side">
     <h1 class="brand">Trivial de clase<span>Preguntas y quesitos para jugar por equipos</span></h1>
     <section class="panel" id="sidepanel"></section>
+    <section class="panel chat" id="chatpanel" hidden></section>
     <section class="panel room" id="roompanel"></section>
     <section class="panel">
       <h2>Categorías</h2>
@@ -234,6 +254,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
           <li>Las casillas blancas ↻ te dejan tirar otra vez.</li>
           <li>Con los 6 quesitos, el resto de equipos elige la categoría de tu pregunta final. Si aciertas, ganas.</li>
           <li>Cada uno juega desde su ordenador o su móvil. En cada turno de un equipo tira y responde uno de sus jugadores, por orden; los demás pueden ayudarle.</li>
+          <li>Cada equipo tiene su chat privado. Mientras responde un compañero, pulsa una opción para proponérsela.</li>
           <li>Teclado: 1–4 para responder, Intro para continuar.</li>
         </ul>
       </details>
@@ -521,6 +542,7 @@ function hostConn(conn) {
       const name = cleanName(msg.name);
       if (name) p.name = name;
       render();
+      if (p.team !== null) sendChat(p.team);
     } else if (msg.t === 'act' && conn.pid) {
       perform(conn.pid, msg.a, msg.v);
     }
@@ -593,7 +615,11 @@ function connectToHost() {
     NET.status = 'open'; NET.everConnected = true; NET.fails = 0; NET.lastErr = '';
     conn.send({t:'hello', pid:NET.pid, name:NET.name});
   });
-  conn.on('data', msg => { if (NET.conn === conn && msg && msg.t === 'state') applyState(msg.S); });
+  conn.on('data', msg => {
+    if (NET.conn !== conn || !msg) return;
+    if (msg.t === 'state') applyState(msg.S);
+    else if (msg.t === 'chat' && Array.isArray(msg.msgs)) { NET.chat = msg.msgs; renderChat(); }
+  });
   conn.on('error', err => { NET.lastErr = err.type || 'error'; });
   conn.on('close', () => { clearTimeout(timeout); failed(); });
 }
@@ -618,6 +644,7 @@ const teamPlayers = k => S.players.filter(p => p.team === k && p.online);
 const playerName = pid => { const p = S.players.find(p => p.pid === pid); return p ? p.name || 'Sin nombre' : ''; };
 function allowed(pid, a) {
   if (a === 'team' || a === 'name') return S.phase === 'setup' || playerTeam(pid) === null;
+  if (a === 'chat') return S.phase !== 'setup' && playerTeam(pid) !== null;
   const team = playerTeam(pid);
   if (team === null || !S.teams[team]) return false;
   if (a === 'cat') return team !== S.turn; // la categoría final la eligen los demás equipos
@@ -638,10 +665,91 @@ function perform(pid, a, v) {
   else if (a === 'cat') { if (Number.isInteger(v) && v >= 0 && v < 6) pickFinalCat(v); }
   else if (a === 'team') {
     const p = S.players.find(p => p.pid === pid), max = S.phase === 'setup' ? S.setupCount : S.teams.length;
-    if (p && p.name && (v === null || (Number.isInteger(v) && v >= 0 && v < max))) { p.team = v; render(); }
+    if (p && p.name && (v === null || (Number.isInteger(v) && v >= 0 && v < max))) { p.team = v; render(); if (v !== null && S.phase !== 'setup') sendChat(v); }
   } else if (a === 'name') {
     const p = S.players.find(p => p.pid === pid);
     if (p) { p.name = cleanName(v); render(); }
+  } else if (a === 'chat' && v && typeof v === 'object') postChat(pid, v);
+}
+
+/* ---------- Chat de equipo ----------
+   Los mensajes solo se envían a los jugadores del equipo. Mientras el equipo responde, los compañeros
+   pueden proponer una opción: sale en el chat y como etiqueta en esa opción. */
+const CHAT = new Map(); // anfitrión: equipo → mensajes
+let chatN = 0;
+const lastPosts = new Map();
+function postChat(pid, v) {
+  const team = playerTeam(pid), now = Date.now();
+  const recent = (lastPosts.get(pid) || []).filter(t => now - t < 4000);
+  if (recent.length >= 6) return; // evita inundar el chat
+  lastPosts.set(pid, [...recent, now]);
+  let msg;
+  if (Number.isInteger(v.vote)) {
+    const q = S.q;
+    if (S.phase !== 'question' || !q || q.id !== v.q || q.picked !== null || team !== S.turn || pid === S.roller || !q.options[v.vote]) return;
+    msg = {kind:'vote', q:q.id, i:v.vote, text:q.options[v.vote]};
+  } else {
+    const text = String(v.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!text) return;
+    msg = {kind:'text', text};
+  }
+  const list = CHAT.get(team) || [];
+  list.push({...msg, id:++chatN, pid, name:playerName(pid), ts:now});
+  CHAT.set(team, list.slice(-60));
+  sendChat(team);
+}
+function sendChat(team) {
+  if (!isHost()) return;
+  const msgs = CHAT.get(team) || [];
+  S.players.forEach(p => {
+    if (p.team !== team || !p.online) return;
+    if (p.pid === NET.pid) return renderChat();
+    const c = NET.conns.get(p.pid);
+    if (c && c.open) c.send({t:'chat', msgs});
+  });
+}
+const myChat = () => isHost() ? CHAT.get(myTeam()) || [] : NET.chat || [];
+// Propuestas de los compañeros para la pregunta actual (la última de cada uno).
+function currentVotes() {
+  const votes = new Map();
+  if (S.q) myChat().forEach(m => { if (m.kind === 'vote' && m.q === S.q.id) votes.set(m.pid, m); });
+  return [...votes.values()];
+}
+function chatBox(el, compact) {
+  if (!el.querySelector('.chatlog')) {
+    el.innerHTML = `<h2>Chat de tu equipo</h2><div class="chatlog${compact ? ' compact' : ''}" aria-live="polite"></div>` +
+      `<form class="chatform"><input maxlength="200" placeholder="Escribe a tu equipo…" aria-label="Mensaje para tu equipo" autocomplete="off"><button class="btn small">Enviar</button></form>`;
+    el.querySelector('form').onsubmit = e => {
+      e.preventDefault();
+      const inp = e.target.querySelector('input'), text = inp.value.trim();
+      if (text) { act('chat', {text}); inp.value = ''; }
+    };
+  }
+  const log = el.querySelector('.chatlog'), msgs = myChat();
+  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 30;
+  log.innerHTML = msgs.length ? msgs.map(m =>
+    `<p class="${m.pid === NET.pid ? 'own' : ''}${m.kind === 'vote' ? ' vote' : ''}"><b>${esc(m.pid === NET.pid ? 'Tú' : m.name || 'Sin nombre')}</b>` +
+    (m.kind === 'vote' ? ` ${m.pid === NET.pid ? 'propones' : 'propone'} «${esc(m.text)}»` : `: ${esc(m.text)}`) + `</p>`).join('')
+    : `<p class="empty">Aquí podéis poneros de acuerdo. Solo lo ve tu equipo.</p>`;
+  if (atBottom || log.dataset.n !== String(msgs.length)) log.scrollTop = log.scrollHeight;
+  log.dataset.n = msgs.length;
+}
+function renderChat() {
+  if (!S) return;
+  const side = $('chatpanel'), show = S.phase !== 'setup' && myTeam() !== null;
+  side.hidden = !show;
+  if (show) chatBox(side, false); else side.innerHTML = '';
+  if ($('qchat')) chatBox($('qchat'), true);
+  // Etiquetas de propuestas en las opciones de la pregunta
+  if ($('opts') && S.q) {
+    const votes = currentVotes();
+    $('opts').querySelectorAll('.opt').forEach((b, i) => {
+      const who = votes.filter(v => v.i === i).map(v => v.pid === NET.pid ? 'Tú' : v.name);
+      let tag = b.querySelector('.votes');
+      if (!who.length) { if (tag) tag.remove(); return; }
+      if (!tag) { tag = document.createElement('span'); tag.className = 'votes'; b.appendChild(tag); }
+      tag.textContent = 'Propone: ' + who.join(', ');
+    });
   }
 }
 // En cada turno de un equipo tira uno de sus jugadores, por orden; si se desconecta, pasa al siguiente.
@@ -741,6 +849,7 @@ function render() {
   renderSide();
   renderRoom();
   renderModal();
+  renderChat();
   if (isHost()) { broadcast(); save(); }
 }
 
@@ -1010,10 +1119,12 @@ function startGame() {
   S.teams = used.map(k => ({name:(S.setupNames[k] || '').trim() || `Equipo ${k+1}`, color:TEAM_COLORS[k].c, ink:TEAM_COLORS[k].ink,
                              setup:k, pos:0, rot:rnd(8), wedges:[false,false,false,false,false,false]}));
   S.players.forEach(p => { p.team = p.team === null ? null : used.indexOf(p.team) < 0 ? null : used.indexOf(p.team); });
+  CHAT.clear();
   S.turn = rnd(S.teams.length);
   S.die = null;
   S.msg = 'Empieza este equipo, elegido al azar.';
   beginTurn(true, true);
+  S.teams.forEach((_, k) => sendChat(k));
 }
 function beginTurn(keepMsg, newTurn) {
   const t = S.teams[S.turn];
@@ -1150,19 +1261,28 @@ function renderModal() {
 function drawQuestion() {
   const q = S.q, cat = CATS[q.cat], t = S.teams[S.turn], mine = canAct('answer');
   const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' ? 'Pregunta final' : '';
-  const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine ? '' : ' disabled'}><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join('');
-  const who = S.roller === NET.pid ? 'Respondes tú (puedes consultarlo con tu equipo)'
+  const teammate = !mine && myTeam() === S.turn && q.picked === null; // compañero: puede proponer
+  const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine || teammate ? '' : ' disabled'}><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join('');
+  const withChat = myTeam() === S.turn && teamPlayers(S.turn).length > 1;
+  const who = teammate ? `Responde ${esc(playerName(S.roller))}. Pulsa una opción para proponérsela.`
+    : S.roller === NET.pid ? (withChat ? 'Respondes tú. Mira lo que propone tu equipo en el chat.' : 'Respondes tú.')
     : S.roller ? `Responde ${esc(playerName(S.roller))} (${esc(t.name)})` : `Responde ${esc(t.name)}`;
   openModal(
     `<div class="qhead" style="background:${cat.color};color:${cat.ink}"><span class="cat" id="qtitle">${cat.name}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>` +
     (S.timeLimit ? `<div class="timer"><i id="tbar"></i></div>` : '') +
     `<div class="qbody"><p class="qteam">${who}</p><p class="qtext">${esc(q.text)}</p>` +
     `<div class="opts" id="opts">${opts}</div>` +
+    (withChat ? `<section class="qchat chat" id="qchat"></section>` : '') +
     `<div class="qfoot"><p class="verdict" id="verdict"></p><button class="btn" id="contBtn" hidden>Continuar</button></div></div>`
   );
-  $('opts').onclick = e => { const b = e.target.closest('.opt'); if (b && !b.disabled) act('answer', {q:q.id, i:+b.dataset.i}); };
+  $('opts').onclick = e => {
+    const b = e.target.closest('.opt'); if (!b || b.disabled) return;
+    if (canAct('answer')) act('answer', {q:q.id, i:+b.dataset.i});
+    else act('chat', {vote:+b.dataset.i, q:q.id});
+  };
   $('contBtn').onclick = () => act('cont', q.id);
   clearInterval(timerId);
+  renderChat();
   if (q.picked !== null) return showVerdict();
   if (mine) $('opts').querySelector('.opt').focus({preventScroll:true});
   if (S.timeLimit) {

@@ -10,6 +10,7 @@ Cada jugador juega desde su ordenador o su móvil.
 2. Los demás abren el enlace, o abren el juego, pulsan **Unirme a partida** y escriben el código.
 3. En la sala, cada uno escribe su nombre y elige equipo. Quien ha creado la partida elige el número de equipos, sus nombres y el tiempo para responder, y pulsa **Empezar partida** (hacen falta al menos 2 equipos con jugadores; los equipos vacíos no juegan).
 4. En cada turno de un equipo tira **uno de sus jugadores**, por orden: tira el dado, elige una de las dos casillas que parpadean y responde la pregunta del color de la casilla. Los demás lo ven en directo. Si acierta, vuelve a tirar; si falla, pasa el turno al siguiente equipo.
+   Cada equipo tiene un **chat privado** (en el panel lateral y dentro de la pregunta). Mientras responde un compañero, los demás pueden pulsar una opción para **proponérsela**: aparece en el chat y en la propia opción.
 5. En las casillas grandes se gana un quesito. Con los 6, los demás equipos eligen la categoría de la pregunta final. Si se acierta, ese equipo gana.
 
 Atajos: teclas 1–4 para responder, Intro para continuar.
