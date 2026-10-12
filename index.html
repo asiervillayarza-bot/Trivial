@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>body{margin:0}</style>
-<title>Trivial de clase</title>
+<title>Quesitos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&display=swap">
@@ -239,7 +239,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
   </div>
 
   <aside class="side">
-    <h1 class="brand">Trivial de clase<span>Preguntas y quesitos para jugar por equipos</span></h1>
+    <h1 class="brand">Quesitos<span>El trivial para jugar con tus amigos</span></h1>
     <section class="panel" id="sidepanel"></section>
     <section class="panel chat" id="chatpanel" hidden></section>
     <section class="panel room" id="roompanel"></section>
@@ -1049,7 +1049,7 @@ function renderLobby() {
 
   const qrOld = $('qr') && $('qr').dataset.room === NET.room ? $('qr').innerHTML : '';
   setPanel(el, 'lobbyscr',
-    `<header class="lobhead"><div class="brand">Trivial de clase<span>Sala ${esc(NET.room || '')}</span></div>` +
+    `<header class="lobhead"><div class="brand">Quesitos<span>Sala ${esc(NET.room || '')}</span></div>` +
       `<button class="btn ghost small" id="leaveBtn">Salir</button></header>` +
     `<div class="lobgrid">` +
       `<div class="lobcol">` +
@@ -1456,7 +1456,7 @@ function showHome() {
   home.hidden = false;
   home.innerHTML =
     `<div>${pieSVG([true,true,true,true,true,true], 150, 'home-logo')}</div>` +
-    `<h1>Trivial de clase<span>Preguntas y quesitos para jugar por equipos</span></h1>` +
+    `<h1>Quesitos<span>El trivial para jugar con tus amigos</span></h1>` +
     `<div class="choices">` +
       `<div class="choice"><h2>Crear partida</h2><p>Crea una sala y pasa el código o el enlace a tus amigos. Tú también juegas.</p>` +
         `<button class="btn" id="createBtn">Crear partida</button></div>` +
