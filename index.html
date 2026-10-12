@@ -83,7 +83,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .seg button{border:0;border-radius:10px;padding:8px 12px;background:var(--felt);font-weight:800;min-width:42px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .names{display:flex;flex-direction:column;gap:10px}
-.trow{display:flex;flex-direction:column;gap:6px}
 .tline{display:flex;gap:8px;align-items:center}
 .tline .dot{flex:none}
 .names input{flex:1;min-width:0;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit;font-weight:600}
@@ -98,7 +97,6 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 /* Jugadores y sala */
 .members{display:flex;flex-wrap:wrap;gap:4px;font-size:13px;line-height:1.3}
 .team .members{grid-column:2/-1}
-.trow .members{padding-left:36px}
 .chip{background:var(--bg);border-radius:999px;padding:2px 9px;font-weight:600;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.me{background:var(--ink);color:var(--bg);font-weight:800}
 .chip.off{opacity:.45}
@@ -115,16 +113,40 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 .status.ok b{background:var(--ok)}
 .link{color:var(--muted);font-size:14px;align-self:flex-start}
 .linkbtn{background:none;border:0;padding:0;text-decoration:underline}
-.pickteam{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:0;border-radius:12px;background:var(--felt);text-align:left}
-.pickteam .name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pickteam .join{font-size:13px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--bg);color:var(--muted)}
-.pickteam.mine{box-shadow:inset 0 0 0 2px var(--ink)}
-.pickteam.mine .join{background:var(--ok);color:#06301a}
-.pickteam.current{background:var(--line)}
-.pickteam:disabled{cursor:default;opacity:.6}
-.teams li:not(.team) > .members{padding:6px 0 0 48px}
 .verdict .wait{display:block;font-family:var(--font-body);font-size:15px;font-weight:600;color:var(--muted)}
-@media (max-width:880px){body.lobby .side{order:-1}}
+
+/* Turnos por jugador */
+.hub .roller{font-weight:800;font-size:clamp(13px,2.6cqw,19px);background:rgba(255,255,255,.1);padding:.2em .9em;border-radius:999px}
+.chip.turn{background:var(--ok);color:#06301a;font-weight:800}
+.chip i{font-style:normal;margin-right:3px;color:#f5c518}
+.chip.me i,.chip.turn i{color:inherit}
+.team .jointeam{grid-column:2/-1;justify-self:start}
+
+/* Sala de espera */
+.lobbyscr{max-width:1180px;margin:0 auto;padding:20px 16px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px}
+.lobhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lobhead .brand{font-size:clamp(28px,5vw,40px)}
+.lobgrid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
+.lobcol{display:flex;flex-direction:column;gap:20px;min-width:0}
+@media (max-width:880px){
+  .lobgrid{grid-template-columns:minmax(0,1fr)}
+  .lobcol{display:contents}
+  .lob-me{order:1}.lob-teams{order:2}.startarea{order:3}.lob-invite{order:4}.lob-settings{order:5}
+}
+.lobbyscr .names input{font-size:17px}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tcard{display:flex;flex-direction:column;gap:10px;text-align:left;border:0;border-radius:16px;padding:12px;background:var(--felt);box-shadow:inset 0 4px 0 var(--tc);min-height:120px}
+.tcard:hover{box-shadow:inset 0 4px 0 var(--tc),inset 0 0 0 2px var(--line)}
+.tcard.mine{box-shadow:inset 0 4px 0 var(--tc),inset 0 0 0 2px var(--ink)}
+.tchead{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px}
+.tname{font-weight:800;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.tcard .join{font-size:13px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--bg);color:var(--muted)}
+.tcard.mine .join{background:var(--ok);color:#06301a}
+.tbody .members{font-size:14px}
+.tbody .empty{color:var(--muted);font-size:14px;opacity:.7}
+.startarea{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:8px 0}
+.btn.big{font-size:22px;padding:.7em 2.2em}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
 /* Pantalla de inicio */
 .home{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:32px 16px;text-align:center}
@@ -184,7 +206,9 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 
 <section class="home" id="home" hidden></section>
 
-<main class="app" id="app">
+<section class="lobbyscr" id="lobby" hidden></section>
+
+<main class="app" id="app" hidden>
   <div class="board" id="board">
     <svg viewBox="0 0 1000 1000" role="img" aria-label="Tablero de juego">
       <circle cx="500" cy="500" r="499" fill="var(--felt)"></circle>
@@ -209,7 +233,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
           <li>Las casillas grandes con un quesito dan quesito si aciertas.</li>
           <li>Las casillas blancas ↻ te dejan tirar otra vez.</li>
           <li>Con los 6 quesitos, el resto de equipos elige la categoría de tu pregunta final. Si aciertas, ganas.</li>
-          <li>Desde el móvil: entrad con el código o el QR de la sala, elegid equipo y, cuando os toque, tirad y responded desde el móvil. El ordenador del profe también puede jugar por cualquier equipo.</li>
+          <li>Cada uno juega desde su ordenador o su móvil. En cada turno de un equipo tira y responde uno de sus jugadores, por orden; los demás pueden ayudarle.</li>
           <li>Teclado: 1–4 para responder, Intro para continuar.</li>
         </ul>
       </details>
@@ -394,21 +418,23 @@ const polar = (r, deg) => { const a = deg * Math.PI / 180; return [500 + r * Mat
 const f = n => n.toFixed(2);
 const store = (kind, key, val) => { try { const s = window[kind]; if (val === undefined) return s.getItem(key); s.setItem(key, val); } catch {} return null; };
 
-let S; // estado de la partida (solo el ordenador anfitrión lo modifica; los móviles reciben una copia)
+let S; // estado de la partida (solo el navegador de quien crea la partida lo modifica; los demás reciben una copia)
 let timerId = null, moveId = null, rollAnimId = null;
 
 function freshState() {
   return {
     phase:'setup', setupCount:4, setupNames:DEFAULT_NAMES.slice(), timeLimit:30,
     teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, qn:0, picking:false, msg:'', winner:null, confirmReset:false,
-    players:[], // jugadores conectados desde el móvil: {pid, name, team, online}
+    players:[], // jugadores: {pid, name, team, online}
+    hostPid:null, // jugador que ha creado la partida (su navegador hace de enlace entre todos)
+    roller:null,  // jugador del equipo en turno al que le toca tirar y responder
   };
 }
 
 /* ---------- Red: sala para unirse con código o enlace ----------
-   El ordenador que abre la página sin «?sala=» es el anfitrión: crea una sala con PeerJS (WebRTC),
-   lleva la partida y envía el estado a los móviles. Los móviles abren «?sala=CÓDIGO», eligen equipo
-   y mandan sus acciones (tirar, elegir casilla, responder…) al anfitrión, que comprueba si les toca. */
+   Quien pulsa «Crear partida» es el anfitrión: juega como uno más, pero su navegador abre la sala con
+   PeerJS (WebRTC), lleva la partida y envía el estado a los demás. Los demás abren «?sala=CÓDIGO» y
+   mandan sus acciones (tirar, elegir casilla, responder…) al anfitrión, que comprueba si les toca. */
 const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
 const QR_URL = 'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js';
 const PEER_PREFIX = 'trivial-clase-v1-';
@@ -585,18 +611,21 @@ function applyState(P) {
 
 // --- Acciones: en el anfitrión se aplican; en el móvil se envían al anfitrión ---
 const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+const me = () => S.players.find(p => p.pid === NET.pid) || null;
 const playerTeam = pid => { const p = S.players.find(p => p.pid === pid); return p ? p.team : null; };
-const myTeam = () => isHost() ? null : playerTeam(NET.pid);
+const myTeam = () => playerTeam(NET.pid);
+const teamPlayers = k => S.players.filter(p => p.team === k && p.online);
+const playerName = pid => { const p = S.players.find(p => p.pid === pid); return p ? p.name || 'Sin nombre' : ''; };
 function allowed(pid, a) {
-  if (pid === null) return true; // el ordenador anfitrión puede hacerlo todo (modo proyector)
-  if (a === 'team' || a === 'name') return true;
+  if (a === 'team' || a === 'name') return S.phase === 'setup' || playerTeam(pid) === null;
   const team = playerTeam(pid);
   if (team === null || !S.teams[team]) return false;
-  return a === 'cat' ? team !== S.turn : team === S.turn;
+  if (a === 'cat') return team !== S.turn; // la categoría final la eligen los demás equipos
+  return team === S.turn && S.roller === pid; // solo tira y responde el jugador al que le toca
 }
-const canAct = a => allowed(isHost() ? null : NET.pid, a);
+const canAct = a => allowed(NET.pid, a);
 function act(a, v = null) {
-  if (isHost()) return perform(null, a, v);
+  if (isHost()) return perform(NET.pid, a, v);
   if (canAct(a) && NET.conn && NET.conn.open) NET.conn.send({t:'act', a, v});
 }
 function perform(pid, a, v) {
@@ -607,13 +636,19 @@ function perform(pid, a, v) {
   else if (a === 'cont') { if (S.q && S.q.id === v) afterAnswer(); }
   else if (a === 'final') openFinalPicker();
   else if (a === 'cat') { if (Number.isInteger(v) && v >= 0 && v < 6) pickFinalCat(v); }
-  else if (a === 'team' && pid !== null) {
+  else if (a === 'team') {
     const p = S.players.find(p => p.pid === pid), max = S.phase === 'setup' ? S.setupCount : S.teams.length;
-    if (p && (v === null || (Number.isInteger(v) && v >= 0 && v < max))) { p.team = v; render(); }
-  } else if (a === 'name' && pid !== null) {
+    if (p && p.name && (v === null || (Number.isInteger(v) && v >= 0 && v < max))) { p.team = v; render(); }
+  } else if (a === 'name') {
     const p = S.players.find(p => p.pid === pid);
     if (p) { p.name = cleanName(v); render(); }
   }
+}
+// En cada turno de un equipo tira uno de sus jugadores, por orden; si se desconecta, pasa al siguiente.
+function assignRoller(advance) {
+  const ps = teamPlayers(S.turn), t = S.teams[S.turn];
+  if (!ps.length) { S.roller = null; return; }
+  if (advance || !ps.some(p => p.pid === S.roller)) { S.roller = ps[(t.rot || 0) % ps.length].pid; t.rot = (t.rot || 0) + 1; }
 }
 
 /* ---------- Tablero ---------- */
@@ -661,8 +696,19 @@ function pieSVG(wedges, size, cls = '') {
 }
 
 /* ---------- Render ---------- */
+const inLobby = () => S.phase === 'setup' || (!isHost() && !NET.everConnected);
 function render() {
-  document.body.classList.toggle('lobby', !isHost() && S.phase === 'setup');
+  if (isHost() && S.phase !== 'setup' && S.phase !== 'won') assignRoller(false);
+  const lobby = inLobby();
+  $('lobby').hidden = !lobby; $('app').hidden = lobby;
+  if (lobby) {
+    closeModal(); modalKey = '';
+    $('roompanel').innerHTML = '';
+    renderLobby();
+    if (isHost()) { broadcast(); save(); }
+    return;
+  }
+  $('lobby').innerHTML = '';
   // destinos
   const pick = S.phase === 'choose' && canAct('dest');
   document.querySelectorAll('.cell').forEach(el => {
@@ -715,23 +761,15 @@ function animateDie() {
 }
 const teamColor = t => t.color === '#1b1b1b' ? 'var(--ink)' : t.color;
 
+function connText() {
+  return NET.status === 'missing' ? 'No encuentro esta sala. Revisa el código o espera a que tu amigo cree la partida.'
+    : NET.status === 'error' ? 'No se pudo cargar el juego en red. Revisa la conexión a internet.'
+    : NET.stage === 'server' ? 'Conectando con el servidor…'
+    : NET.fails < 2 ? 'Conectando con la partida…'
+    : `No consigo conectar con la partida. Puede ser la red (wifi del centro, VPN) o el navegador; si estáis en el mismo ordenador, probad desde otro dispositivo. Sigo intentándolo… (${NET.fails} intentos, ${NET.lastErr || 'sin respuesta'})`;
+}
 function renderHub() {
   const hub = $('hub');
-  if (!isHost() && NET.status !== 'open' && !NET.everConnected) {
-    const txt = NET.status === 'missing' ? 'No encuentro esta sala. Revisa el código o espera a que el profe abra la partida.'
-      : NET.status === 'error' ? 'No se pudo cargar el juego en red. Revisa la conexión a internet.'
-      : NET.stage === 'server' ? 'Conectando con el servidor…'
-      : NET.fails < 2 ? 'Conectando con el ordenador de la partida…'
-      : `No consigo conectar con el ordenador de la partida. Puede ser la red (wifi del centro, VPN) o el navegador. Sigo intentándolo… (${NET.fails} intentos, ${NET.lastErr || 'sin respuesta'})`;
-    hub.innerHTML = `<div class="label">Sala</div><div class="who">${esc(NET.room)}</div><div class="msg">${txt}</div>`;
-    return;
-  }
-  if (S.phase === 'setup') {
-    hub.innerHTML = isHost()
-      ? `<div class="label">Preparados</div><div class="who">¿Quién sabe más?</div><div class="msg">Elige los equipos en el panel y pulsa «Empezar partida».</div>`
-      : `<div class="label">Sala ${esc(NET.room)}</div><div class="who">¿Quién sabe más?</div><div class="msg">Elige tu equipo y espera a que empiece la partida.</div>`;
-    return;
-  }
   if (S.phase === 'won') {
     const t = S.teams[S.winner];
     hub.innerHTML = `<div class="label">Ganador</div>${pieSVG(t.wedges, 90, 'bigpie')}<div class="who">${esc(t.name)}</div>` +
@@ -739,21 +777,22 @@ function renderHub() {
     if ($('hubNew')) $('hubNew').onclick = () => { S.confirmReset = false; resetToSetup(); };
     return;
   }
-  const t = S.teams[S.turn];
+  const t = S.teams[S.turn], mine = myTeam() === S.turn, isRoller = S.roller === NET.pid;
+  const roller = S.roller ? playerName(S.roller) : '';
   let action = '', msg = S.msg;
   if (S.phase === 'roll') {
     if (canAct('roll')) action = `<button class="btn" id="rollBtn">Tirar dado</button>`;
-    else msg = msg || `Esperando a que tire ${t.name}.`;
+    else msg = roller ? `Esperando a que tire ${roller}.` : `${t.name} no tiene a nadie conectado.`;
   }
-  if (S.phase === 'choose' && !canAct('dest')) msg = `${t.name} está eligiendo casilla.`;
+  if (S.phase === 'choose' && !isRoller) msg = `${roller || t.name} está eligiendo casilla.`;
   if (S.phase === 'final') {
     if (canAct('final') && !S.picking) action = `<button class="btn" id="finalBtn">Pregunta final</button>`;
-    else if (S.picking) msg = 'Los demás equipos están eligiendo la categoría.';
+    else if (S.picking) msg = canAct('cat') ? 'Elegid la categoría de su pregunta final.' : 'Los demás equipos están eligiendo la categoría.';
   }
-  const mine = !isHost() && myTeam() === S.turn;
   hub.innerHTML =
-    `<div class="label">${mine ? 'Os toca a vosotros' : 'Turno de'}</div>` +
+    `<div class="label">${isRoller ? '¡Te toca!' : mine ? 'Le toca a tu equipo' : 'Turno de'}</div>` +
     `<div class="who" style="color:${teamColor(t)}">${esc(t.name)}</div>` +
+    (roller ? `<div class="roller">Tira ${isRoller ? 'tú' : esc(roller)}</div>` : '') +
     `<div class="row">${pieSVG(t.wedges, 90, 'bigpie')}${dieHTML(S.die, S.phase === 'rolling')}</div>` +
     action + `<div class="msg">${esc(msg)}</div>`;
   if ($('rollBtn')) $('rollBtn').onclick = () => act('roll');
@@ -765,7 +804,8 @@ function membersHTML(k) {
   const ps = S.players.filter(p => p.team === k);
   if (!ps.length) return '';
   return `<div class="members">` + ps.map(p =>
-    `<span class="chip${p.pid === NET.pid ? ' me' : ''}${p.online ? '' : ' off'}">${esc(p.name || 'Sin nombre')}</span>`).join('') + `</div>`;
+    `<span class="chip${p.pid === NET.pid ? ' me' : ''}${p.online ? '' : ' off'}${S.phase !== 'setup' && p.pid === S.roller ? ' turn' : ''}">` +
+    `${p.pid === S.hostPid ? '<i title="Ha creado la partida">★</i>' : ''}${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span>`).join('') + `</div>`;
 }
 
 // Redibuja un panel sin perder el foco ni el cursor del campo de texto que se está escribiendo.
@@ -778,123 +818,170 @@ function setPanel(el, cls, html) {
 }
 
 function renderSide() {
-  const p = $('sidepanel');
-  if (!isHost()) return renderPlayerSide(p);
-  if (S.phase === 'setup') {
-    let names = '';
-    for (let k = 0; k < S.setupCount; k++) {
-      const tc = TEAM_COLORS[k];
-      names += `<div class="trow"><div class="tline"><span class="dot" style="background:${tc.c};color:${tc.ink}">${k+1}</span>` +
-               `<input id="name${k}" maxlength="24" aria-label="Nombre del equipo ${k+1}" value="${esc(S.setupNames[k])}"></div>${membersHTML(k)}</div>`;
-    }
-    const loose = S.players.filter(p => p.team === null);
-    setPanel(p, 'panel setup',
-      `<h2>Nueva partida</h2>` +
-      `<div class="field"><label>Número de equipos</label><div class="seg" id="countSeg">` +
-        [2,3,4,5,6].map(n => `<button aria-pressed="${n === S.setupCount}" data-n="${n}">${n}</button>`).join('') + `</div></div>` +
-      `<div class="field"><label>Nombres</label><div class="names">${names}</div></div>` +
-      (loose.length ? `<div class="field"><label>Sin equipo todavía</label><div class="members">` +
-        loose.map(p => `<span class="chip">${esc(p.name || 'Sin nombre')}</span>`).join('') + `</div></div>` : '') +
-      `<div class="field"><label>Tiempo para responder</label><div class="seg" id="timeSeg">` +
-        [[0,'Sin límite'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div>` +
-      `<button class="btn" id="startBtn" style="font-size:18px">Empezar partida</button>`);
-    p.querySelectorAll('.names input').forEach((inp, k) => inp.addEventListener('input', () => { S.setupNames[k] = inp.value; broadcast(); save(); }));
-    $('countSeg').onclick = e => {
-      const b = e.target.closest('button'); if (!b) return;
-      S.setupCount = +b.dataset.n;
-      S.players.forEach(p => { if (p.team !== null && p.team >= S.setupCount) p.team = null; });
-      render();
-    };
-    $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) { S.timeLimit = +b.dataset.v; render(); } };
-    $('startBtn').onclick = startGame;
-    return;
-  }
+  const p = $('sidepanel'), mine = myTeam();
   const rows = S.teams.map((t, k) =>
-    `<li class="team${k === S.turn && S.phase !== 'won' ? ' current' : ''}">` +
+    `<li class="team${k === S.turn && S.phase !== 'won' ? ' current' : ''}${k === mine ? ' mine' : ''}">` +
     `<span class="dot" style="background:${t.color};color:${t.ink}">${k+1}</span>` +
     `<span class="name" title="${esc(t.name)}">${esc(t.name)}</span>${pieSVG(t.wedges, 34)}` +
-    `<span class="count">${t.wedges.filter(Boolean).length}/6</span>${membersHTML(k)}</li>`).join('');
+    `<span class="count">${t.wedges.filter(Boolean).length}/6</span>${membersHTML(k)}` +
+    (mine === null ? `<button class="btn ghost small jointeam" data-k="${k}">Unirme</button>` : '') + `</li>`).join('');
   setPanel(p, 'panel', `<h2>Equipos</h2><ul class="teams">${rows}</ul>` +
-    (S.confirmReset
-      ? `<div class="confirm"><p>¿Seguro? Se perderá la partida actual.</p><button class="btn" id="yesReset">Sí, empezar de nuevo</button><button class="btn ghost" id="noReset">Seguir jugando</button></div>`
+    (mine === null ? `<p class="hint">Todavía no estás en ningún equipo: únete a uno para jugar.</p>` : '') +
+    (!isHost() ? '' : S.confirmReset
+      ? `<div class="confirm"><p>¿Seguro? Se terminará la partida para todos y volveréis a la sala.</p><button class="btn" id="yesReset">Sí, volver a la sala</button><button class="btn ghost" id="noReset">Seguir jugando</button></div>`
       : `<button class="btn ghost" id="resetBtn" style="font-size:15px;align-self:flex-start">Nueva partida</button>`));
+  p.querySelectorAll('.jointeam').forEach(b => b.onclick = () => act('team', +b.dataset.k));
   if ($('resetBtn')) $('resetBtn').onclick = () => { if (S.phase === 'won') resetToSetup(); else { S.confirmReset = true; renderSide(); } };
   if ($('yesReset')) $('yesReset').onclick = () => { S.confirmReset = false; resetToSetup(); };
   if ($('noReset')) $('noReset').onclick = () => { S.confirmReset = false; renderSide(); };
 }
 
-function renderPlayerSide(p) {
-  const playing = S.phase !== 'setup';
-  const count = !NET.everConnected ? 0 : playing ? S.teams.length : S.setupCount;
-  const mine = myTeam();
-  const connected = NET.status === 'open';
-  let teams = '';
-  for (let k = 0; k < count; k++) {
-    const t = playing ? S.teams[k] : {name:(S.setupNames[k] || '').trim() || `Equipo ${k+1}`, color:TEAM_COLORS[k].c, ink:TEAM_COLORS[k].ink};
-    teams += `<li><button class="pickteam${k === mine ? ' mine' : ''}${playing && k === S.turn && S.phase !== 'won' ? ' current' : ''}" data-k="${k}" aria-pressed="${k === mine}"${connected ? '' : ' disabled'}>` +
-      `<span class="dot" style="background:${t.color};color:${t.ink}">${k+1}</span>` +
-      `<span class="name">${esc(t.name)}</span>` +
-      (playing ? `${pieSVG(t.wedges, 34)}` : `<span class="join">${k === mine ? 'Tu equipo' : 'Unirme'}</span>`) +
-      `</button>${membersHTML(k)}</li>`;
-  }
-  setPanel(p, 'panel setup',
-    `<h2>${playing ? 'Equipos' : 'Únete a un equipo'}</h2>` +
-    `<div class="field"><label for="myName">Tu nombre</label><div class="names"><div class="tline"><input id="myName" maxlength="24" placeholder="Escribe tu nombre" value="${esc(NET.name)}" autocomplete="nickname"></div></div></div>` +
-    (count ? `<ul class="teams">${teams}</ul>` : '') +
-    (mine === null && playing ? `<p class="hint">Pulsa un equipo para unirte y responder desde aquí.</p>` : '') +
-    (!playing && mine !== null ? `<p class="hint">¡Listo! Espera a que el profe empiece la partida.</p>` : ''));
-  const inp = $('myName');
-  let deb;
-  inp.addEventListener('input', () => {
-    NET.name = cleanName(inp.value);
-    store('localStorage', 'trivial-name', NET.name);
-    clearTimeout(deb); deb = setTimeout(() => act('name', NET.name), 400);
-  });
-  p.querySelectorAll('.pickteam').forEach(b => b.onclick = () => {
-    if (!NET.name) { inp.focus(); inp.classList.add('need'); return; }
-    act('team', +b.dataset.k);
-  });
-}
-
+// Estado de la sala durante la partida: código para invitar a más gente y conexión.
 function renderRoom() {
+  if (!S || NET.role === 'home') return;
+  if (inLobby()) return renderLobby();
   const p = $('roompanel');
-  if (!isHost()) {
-    const st = {open:'Conectado', connecting:'Conectando…', lost:'Conexión perdida. Reintentando…', missing:'Buscando la sala…', error:'Sin conexión. Reintentando…'}[NET.status] || '';
-    setPanel(p, 'panel room', `<div class="status ${NET.status === 'open' ? 'ok' : 'bad'}"><b></b>Sala <strong>${esc(NET.room)}</strong> · ${st}</div>` +
-      `<a class="link" href="${esc(homeURL())}">Salir de la sala</a>`);
-    return;
-  }
+  const ok = isHost() ? NET.status === 'open' : NET.status === 'open';
+  const st = isHost()
+    ? {open:'Abierta', connecting:'Abriendo…', error:'Sin conexión'}[NET.status] || ''
+    : {open:'Conectado', connecting:'Conectando…', lost:'Conexión perdida. Reintentando…', missing:'Buscando la sala…', error:'Sin conexión. Reintentando…'}[NET.status] || '';
   const online = S.players.filter(p => p.online).length;
-  let body;
-  if (NET.status === 'open') {
-    const url = joinURL(NET.room), local = location.protocol === 'file:';
-    body =
-      `<p class="hint">Entrad desde el móvil con el código o escaneando el QR:</p>` +
-      `<div class="code" aria-label="Código de la sala">${esc(NET.room)}</div>` +
-      (local ? `<p class="hint">Estás abriendo el juego como archivo. Para que el enlace funcione en los móviles, abre el juego desde su página web (por ejemplo, GitHub Pages) y entrad en ella con este código.</p>`
-             : `<div class="qr" id="qr" ${S.phase === 'setup' ? '' : 'hidden'}></div>` +
-               `<div class="linkrow"><input id="roomLink" readonly value="${esc(url)}" aria-label="Enlace de la sala"><button class="btn ghost small" id="copyLink">Copiar</button></div>` +
-               (S.phase === 'setup' ? '' : `<button class="btn ghost small" id="toggleQR" style="align-self:flex-start">Mostrar QR</button>`)) +
-      `<p class="hint">${online === 1 ? '1 jugador conectado' : online + ' jugadores conectados'}` +
-      (NET.pending.size ? ` · ${NET.pending.size === 1 ? '1 entrando' : NET.pending.size + ' entrando'}…` : '') + `</p>`;
-  } else if (NET.status === 'error') {
-    body = `<p class="hint">No se ha podido abrir la sala (¿hay internet?). Podéis jugar igualmente en este ordenador.</p><button class="btn ghost small" id="retryRoom" style="align-self:flex-start">Reintentar</button>`;
-  } else {
-    body = `<p class="hint">Abriendo la sala…</p>`;
-  }
-  const exit = S.phase === 'setup' ? `<button class="link linkbtn" id="toHome">Volver al inicio</button>` : '';
-  // El QR no cambia: si ya está dibujado para esta sala se conserva.
-  const qrOld = $('qr') && $('qr').dataset.room === NET.room ? $('qr').innerHTML : '';
-  setPanel(p, 'panel room', `<h2>Jugar con móviles</h2>${body}${exit}`);
-  if ($('qr')) drawQR($('qr'), qrOld);
+  setPanel(p, 'panel room',
+    `<div class="status ${ok ? 'ok' : 'bad'}"><b></b>Sala <strong>${esc(NET.room || '')}</strong> · ${st}</div>` +
+    (isHost() && NET.status === 'error' ? `<button class="btn ghost small" id="retryRoom" style="align-self:flex-start">Reintentar</button>` : '') +
+    (NET.room ? `<div class="linkrow"><input id="roomLink" readonly value="${esc(joinURL(NET.room))}" aria-label="Enlace de la sala"><button class="btn ghost small" id="copyLink">Copiar</button></div>` : '') +
+    `<p class="hint">${online === 1 ? '1 jugador conectado' : online + ' jugadores conectados'}</p>` +
+    `<button class="link linkbtn" id="leaveBtn">Salir de la partida</button>`);
+  bindRoomButtons();
+}
+function bindRoomButtons() {
   if ($('copyLink')) $('copyLink').onclick = () => {
     const inp = $('roomLink'); inp.select();
     (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.reject()).catch(() => document.execCommand('copy'));
     $('copyLink').textContent = '¡Copiado!';
   };
-  if ($('toggleQR')) $('toggleQR').onclick = () => { const q = $('qr'); q.hidden = !q.hidden; $('toggleQR').textContent = q.hidden ? 'Mostrar QR' : 'Ocultar QR'; };
   if ($('retryRoom')) $('retryRoom').onclick = openRoom;
-  if ($('toHome')) $('toHome').onclick = goHome;
+  if ($('leaveBtn')) $('leaveBtn').onclick = leaveGame;
+  if ($('toggleQR')) $('toggleQR').onclick = () => { NET.showQR = !NET.showQR; renderLobby(); };
+}
+function leaveGame() {
+  if (isHost() && S.players.some(p => p.online && p.pid !== NET.pid) &&
+      !confirm('Has creado tú la partida: si sales, se termina para todos. ¿Salir?')) return;
+  if (isHost()) goHome(); else location.href = homeURL();
+}
+
+/* ---------- Sala de espera: nombre, equipos y ajustes ---------- */
+function renderLobby() {
+  const el = $('lobby');
+  const connected = isHost() || NET.status === 'open';
+  const host = S.players.find(p => p.pid === S.hostPid);
+  const meP = connected ? me() : null;
+  const mine = myTeam();
+  const myName = meP ? meP.name : NET.name;
+
+  // Invitar
+  let invite;
+  if (isHost() && NET.status !== 'open') {
+    invite = NET.status === 'error'
+      ? `<p class="hint">No se ha podido abrir la sala (¿hay internet?).</p><button class="btn ghost small" id="retryRoom" style="align-self:flex-start">Reintentar</button>`
+      : `<p class="hint">Abriendo la sala…</p>`;
+  } else {
+    const local = location.protocol === 'file:';
+    invite =
+      `<p class="hint">Pasa el código o el enlace a tus amigos:</p>` +
+      `<div class="code" aria-label="Código de la sala">${esc(NET.room || '')}</div>` +
+      (local ? `<p class="hint">Estás abriendo el juego como archivo: para que el enlace funcione, abrid el juego desde su página web.</p>`
+        : `<div class="linkrow"><input id="roomLink" readonly value="${esc(joinURL(NET.room))}" aria-label="Enlace de la sala"><button class="btn ghost small" id="copyLink">Copiar</button></div>` +
+          `<button class="link linkbtn" id="toggleQR">${NET.showQR ? 'Ocultar QR' : 'Mostrar QR para el móvil'}</button>` +
+          (NET.showQR ? `<div class="qr" id="qr"></div>` : ''));
+  }
+  const status = isHost() ? '' :
+    `<div class="status ${NET.status === 'open' ? 'ok' : 'bad'}"><b></b>${NET.status === 'open' ? 'Conectado' : esc(connText())}</div>`;
+
+  // Equipos
+  let teams = '';
+  if (connected) for (let k = 0; k < S.setupCount; k++) {
+    const tc = TEAM_COLORS[k], name = (S.setupNames[k] || '').trim() || `Equipo ${k+1}`;
+    const ps = S.players.filter(p => p.team === k);
+    teams += `<button class="tcard${k === mine ? ' mine' : ''}" data-k="${k}" style="--tc:${tc.c};--tink:${tc.ink}" aria-pressed="${k === mine}">` +
+      `<span class="tchead"><span class="dot" style="background:${tc.c};color:${tc.ink}">${k+1}</span><span class="tname">${esc(name)}</span>` +
+      `<span class="join">${k === mine ? 'Tu equipo' : 'Unirme'}</span></span>` +
+      `<span class="tbody">${ps.length ? membersHTML(k) : '<span class="empty">Nadie todavía</span>'}</span></button>`;
+  }
+  const loose = S.players.filter(p => p.team === null);
+  const filled = new Set(S.players.filter(p => p.team !== null && p.online).map(p => p.team)).size;
+
+  // Ajustes (solo quien crea la partida)
+  let settings = '';
+  if (isHost()) {
+    let names = '';
+    for (let k = 0; k < S.setupCount; k++) {
+      const tc = TEAM_COLORS[k];
+      names += `<div class="tline"><span class="dot" style="background:${tc.c};color:${tc.ink}">${k+1}</span>` +
+               `<input id="name${k}" maxlength="24" aria-label="Nombre del equipo ${k+1}" value="${esc(S.setupNames[k])}"></div>`;
+    }
+    settings = `<section class="panel setup lob-settings"><h2>Ajustes de la partida</h2>` +
+      `<div class="field"><label>Número de equipos</label><div class="seg" id="countSeg">` +
+        [2,3,4,5,6].map(n => `<button aria-pressed="${n === S.setupCount}" data-n="${n}">${n}</button>`).join('') + `</div></div>` +
+      `<div class="field"><label>Nombres de los equipos</label><div class="names">${names}</div></div>` +
+      `<div class="field"><label>Tiempo para responder</label><div class="seg" id="timeSeg">` +
+        [[0,'Sin límite'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div></section>`;
+  }
+  const startArea = isHost()
+    ? `<div class="startarea"><button class="btn big" id="startBtn"${filled >= 2 ? '' : ' disabled'}>Empezar partida</button>` +
+      `<p class="hint">${filled >= 2 ? 'Los equipos sin nadie no jugarán.' : 'Hacen falta al menos 2 equipos con jugadores.'}</p></div>`
+    : connected ? `<div class="startarea"><p class="hint">${mine === null ? 'Elige un equipo. ' : '¡Listo! '}Esperando a que ${esc(host ? host.name || 'quien creó la sala' : 'quien creó la sala')} empiece la partida` +
+      (S.timeLimit ? ` · ${S.timeLimit} s para responder` : ' · sin límite de tiempo') + `.</p></div>` : '';
+
+  const qrOld = $('qr') && $('qr').dataset.room === NET.room ? $('qr').innerHTML : '';
+  setPanel(el, 'lobbyscr',
+    `<header class="lobhead"><div class="brand">Trivial de clase<span>Sala ${esc(NET.room || '')}</span></div>` +
+      `<button class="btn ghost small" id="leaveBtn">Salir</button></header>` +
+    `<div class="lobgrid">` +
+      `<div class="lobcol">` +
+        `<section class="panel lob-me"><h2>Tú</h2><div class="names"><div class="tline"><input id="myName" maxlength="24" placeholder="Escribe tu nombre" value="${esc(myName)}" autocomplete="nickname" aria-label="Tu nombre"${connected ? '' : ' disabled'}></div></div>` +
+          `<p class="hint" id="nameHint">${!myName ? 'Escribe tu nombre para poder elegir equipo.' : mine === null ? 'Elige tu equipo.' : 'Puedes cambiarte de equipo hasta que empiece la partida.'}</p></section>` +
+        `<section class="panel lob-invite"><h2>Invitar</h2>${status}${invite}</section>` +
+        settings +
+      `</div>` +
+      `<div class="lobcol wide">` +
+        `<section class="panel lob-teams"><h2>Equipos</h2>` +
+          (connected ? `<div class="tcards">${teams}</div>` : `<p class="hint">${esc(connText())}</p>`) +
+          (loose.length ? `<div class="field"><label>Sin equipo todavía</label>${'<div class="members">' + loose.map(p => `<span class="chip${p.pid === NET.pid ? ' me' : ''}">${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span>`).join('') + '</div>'}</div>` : '') +
+        `</section>` + startArea +
+      `</div>` +
+    `</div>`);
+
+  if ($('qr')) drawQR($('qr'), qrOld);
+  bindRoomButtons();
+  const inp = $('myName');
+  let deb;
+  inp.addEventListener('input', () => {
+    NET.name = cleanName(inp.value);
+    store('localStorage', 'trivial-name', NET.name);
+    inp.classList.remove('need');
+    $('nameHint').textContent = NET.name ? 'Elige tu equipo.' : 'Escribe tu nombre para poder elegir equipo.';
+    clearTimeout(deb); deb = setTimeout(() => act('name', NET.name), 300);
+  });
+  el.querySelectorAll('.tcard').forEach(b => b.onclick = () => {
+    if (!NET.name) { inp.focus(); inp.classList.add('need'); return; }
+    if (meP && meP.name !== NET.name) act('name', NET.name);
+    act('team', +b.dataset.k);
+  });
+  if (!isHost()) return;
+  el.querySelectorAll('.names input[id^="name"]').forEach(i => i.addEventListener('input', () => {
+    S.setupNames[+i.id.slice(4)] = i.value; broadcast(); save();
+    const card = el.querySelector(`.tcard[data-k="${i.id.slice(4)}"] .tname`);
+    if (card) card.textContent = i.value.trim() || `Equipo ${+i.id.slice(4) + 1}`;
+  }));
+  $('countSeg').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.setupCount = +b.dataset.n;
+    S.players.forEach(p => { if (p.team !== null && p.team >= S.setupCount) p.team = null; });
+    render();
+  };
+  $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) { S.timeLimit = +b.dataset.v; render(); } };
+  $('startBtn').onclick = startGame;
 }
 async function drawQR(el, cached) {
   el.dataset.room = NET.room;
@@ -908,25 +995,30 @@ async function drawQR(el, cached) {
 
 /* ---------- Partida ---------- */
 function resetToSetup() {
-  const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, players:S.players.filter(p => p.online)};
+  // Vuelve a la sala con los mismos equipos y jugadores.
+  const players = S.players.filter(p => p.online).map(p => ({...p, team:p.team !== null && S.teams[p.team] ? S.teams[p.team].setup : p.team}));
+  const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, players, hostPid:S.hostPid};
   clearInterval(timerId); clearInterval(moveId);
   S = Object.assign(freshState(), keep);
   render();
 }
 function startGame() {
-  S.teams = [];
-  for (let k = 0; k < S.setupCount; k++) {
-    const name = (S.setupNames[k] || '').trim() || `Equipo ${k+1}`;
-    S.teams.push({name, color:TEAM_COLORS[k].c, ink:TEAM_COLORS[k].ink, pos:0, wedges:[false,false,false,false,false,false]});
-  }
+  // Solo juegan los equipos que tienen a alguien conectado.
+  const used = [];
+  for (let k = 0; k < S.setupCount; k++) if (teamPlayers(k).length) used.push(k);
+  if (used.length < 2) return;
+  S.teams = used.map(k => ({name:(S.setupNames[k] || '').trim() || `Equipo ${k+1}`, color:TEAM_COLORS[k].c, ink:TEAM_COLORS[k].ink,
+                             setup:k, pos:0, rot:rnd(8), wedges:[false,false,false,false,false,false]}));
+  S.players.forEach(p => { p.team = p.team === null ? null : used.indexOf(p.team) < 0 ? null : used.indexOf(p.team); });
   S.turn = rnd(S.teams.length);
   S.die = null;
   S.msg = 'Empieza este equipo, elegido al azar.';
-  beginTurn(true);
+  beginTurn(true, true);
 }
-function beginTurn(keepMsg) {
+function beginTurn(keepMsg, newTurn) {
   const t = S.teams[S.turn];
   S.picking = false;
+  if (newTurn) assignRoller(true);
   if (t.wedges.every(Boolean)) {
     S.phase = 'final';
     S.msg = '¡Tiene los 6 quesitos! Los demás equipos eligen la categoría.';
@@ -936,11 +1028,28 @@ function beginTurn(keepMsg) {
   }
   render();
 }
-function nextTeam() {
-  S.turn = (S.turn + 1) % S.teams.length;
+function nextTeam(msg) {
+  // Se salta a los equipos que no tienen a nadie conectado.
+  for (let i = 0; i < S.teams.length; i++) {
+    S.turn = (S.turn + 1) % S.teams.length;
+    if (teamPlayers(S.turn).length) break;
+  }
   S.die = null;
-  beginTurn();
+  if (msg) S.msg = msg;
+  beginTurn(!!msg, true);
 }
+// Si el equipo al que le toca se queda sin nadie conectado, pierde el turno a los 15 s.
+let awaySince = null;
+setInterval(() => {
+  if (!S || !isHost() || ['setup','won','moving','rolling'].includes(S.phase) || teamPlayers(S.turn).length) { awaySince = null; return; }
+  awaySince = awaySince || Date.now();
+  if (Date.now() - awaySince > 15000) {
+    awaySince = null;
+    const t = S.teams[S.turn];
+    S.q = null; clearInterval(timerId);
+    nextTeam(`${t.name} se ha desconectado y pierde el turno.`);
+  }
+}, 1000);
 function roll() {
   if (S.phase !== 'roll') return;
   S.phase = 'rolling'; S.msg = '';
@@ -1007,7 +1116,7 @@ function afterAnswer() {
   if (S.phase !== 'question' || !q || q.picked === null) return;
   S.q = null;
   if (S.winner !== null) { S.phase = 'won'; return render(); }
-  if (q.ok) { S.msg = q.kind === 'wedge' ? '¡Quesito nuevo! Sigue tirando.' : '¡Bien! Sigue tirando.'; beginTurn(true); }
+  if (q.ok) { S.msg = q.kind === 'wedge' ? '¡Quesito nuevo! Sigue tirando.' : '¡Bien! Sigue tirando.'; beginTurn(true, false); }
   else nextTeam();
 }
 function openFinalPicker() {
@@ -1042,7 +1151,8 @@ function drawQuestion() {
   const q = S.q, cat = CATS[q.cat], t = S.teams[S.turn], mine = canAct('answer');
   const tag = q.kind === 'wedge' ? 'Pregunta de quesito' : q.kind === 'final' ? 'Pregunta final' : '';
   const opts = q.options.map((o, i) => `<button class="opt" data-i="${i}"${mine ? '' : ' disabled'}><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join('');
-  const who = !isHost() && myTeam() === S.turn ? 'Responde tu equipo' : `Responde ${esc(t.name)}`;
+  const who = S.roller === NET.pid ? 'Respondes tú (puedes consultarlo con tu equipo)'
+    : S.roller ? `Responde ${esc(playerName(S.roller))} (${esc(t.name)})` : `Responde ${esc(t.name)}`;
   openModal(
     `<div class="qhead" style="background:${cat.color};color:${cat.ink}"><span class="cat" id="qtitle">${cat.name}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>` +
     (S.timeLimit ? `<div class="timer"><i id="tbar"></i></div>` : '') +
@@ -1089,13 +1199,13 @@ function showVerdict() {
   v.textContent = text;
   const c = $('contBtn');
   if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
-  else v.insertAdjacentHTML('beforeend', `<span class="wait">Esperando a ${esc(t.name)}…</span>`);
+  else v.insertAdjacentHTML('beforeend', `<span class="wait">Esperando a ${esc(S.roller ? playerName(S.roller) : t.name)}…</span>`);
 }
 function drawPicker() {
   const t = S.teams[S.turn], mine = canAct('cat');
   openModal(
     `<div class="qhead" style="background:var(--felt)"><span class="cat" id="qtitle">Pregunta final</span><span class="tag">${esc(t.name)}</span></div>` +
-    `<div class="qbody"><p class="qtext">${mine ? 'Los demás equipos eligen la categoría' : 'Los demás equipos están eligiendo la categoría…'}</p>` +
+    `<div class="qbody"><p class="qtext">${mine ? 'Elegid la categoría de su pregunta final' : 'Los demás equipos están eligiendo la categoría…'}</p>` +
     `<div class="catpick" id="catpick">` +
       CATS.map((c, k) => `<button data-k="${k}" style="background:${c.color};color:${c.ink}"${mine ? '' : ' disabled'}>${c.name}</button>`).join('') +
     `</div></div>`
@@ -1123,25 +1233,26 @@ document.addEventListener('keydown', e => {
 /* ---------- Arranque (el anfitrión conserva la partida y la sala si la página se actualiza) ---------- */
 function start(data) {
   buildLegend(); buildBoard();
+  // Identidad del jugador: se guarda por pestaña para que dos pestañas del mismo navegador sean jugadores distintos.
+  NET.pid = store('sessionStorage', 'trivial-pid') || Math.random().toString(36).slice(2) + Date.now().toString(36);
+  store('sessionStorage', 'trivial-pid', NET.pid);
+  NET.name = cleanName(store('localStorage', 'trivial-name'));
   let saved = data && data.S ? data : null;
   if (!saved && NET.role === 'home') try { saved = JSON.parse(store('sessionStorage', 'trivial-host')); } catch {}
   if (NET.role === 'home') {
     if (!saved || !saved.S) return showHome();
-    NET.role = 'host'; // al recargar, el anfitrión vuelve directamente a su partida
+    NET.role = 'host'; // al recargar, quien creó la partida vuelve directamente a ella
   }
-  $('home').hidden = true; $('app').hidden = false;
+  $('home').hidden = true;
   if (!isHost()) {
     S = freshState();
-    NET.pid = store('localStorage', 'trivial-pid') || Math.random().toString(36).slice(2) + Date.now().toString(36);
-    store('localStorage', 'trivial-pid', NET.pid);
-    NET.name = cleanName(store('localStorage', 'trivial-name'));
     joinRoom();
     return;
   }
   S = Object.assign(freshState(), saved && saved.S ? saved.S : {});
   NET.room = saved && saved.room || null;
-  // Los jugadores vuelven a conectarse solos y conservan su equipo; en la preparación se quita a quien no vuelva.
-  S.players.forEach(p => p.online = false);
+  // Los demás vuelven a conectarse solos y conservan su equipo; en la sala se quita a quien no vuelva.
+  S.players.forEach(p => p.online = p.pid === NET.pid);
   if (S.phase === 'setup') setTimeout(() => {
     if (S && S.phase === 'setup' && S.players.some(p => !p.online)) { S.players = S.players.filter(p => p.online); render(); }
   }, 20000);
@@ -1158,16 +1269,16 @@ addEventListener('pageshow', e => { NET.leaving = false; if (e.persisted && S &&
 const homeURL = () => location.pathname + (PARAMS.get('servidor') ? '?servidor=' + encodeURIComponent(PARAMS.get('servidor')) : '');
 function showHome() {
   NET.role = 'home';
-  $('app').hidden = true; $('modal').hidden = true;
+  $('app').hidden = true; $('lobby').hidden = true; $('modal').hidden = true;
   const home = $('home');
   home.hidden = false;
   home.innerHTML =
     `<div>${pieSVG([true,true,true,true,true,true], 150, 'home-logo')}</div>` +
     `<h1>Trivial de clase<span>Preguntas y quesitos para jugar por equipos</span></h1>` +
     `<div class="choices">` +
-      `<div class="choice"><h2>Crear partida</h2><p>Para el ordenador del profe o el proyector. Tendrás un código y un QR para que los demás se unan.</p>` +
+      `<div class="choice"><h2>Crear partida</h2><p>Crea una sala y pasa el código o el enlace a tus amigos. Tú también juegas.</p>` +
         `<button class="btn" id="createBtn">Crear partida</button></div>` +
-      `<form class="choice" id="joinHome" novalidate><h2>Unirme a partida</h2><p>Escribe el código que aparece en la pantalla.</p>` +
+      `<form class="choice" id="joinHome" novalidate><h2>Unirme a partida</h2><p>Escribe el código que te ha pasado quien ha creado la partida.</p>` +
         `<input id="homeCode" maxlength="8" placeholder="Código" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Código de la partida">` +
         `<span class="err" id="homeErr" aria-live="polite"></span>` +
         `<button class="btn">Unirme</button></form>` +
@@ -1187,8 +1298,10 @@ function showHome() {
 }
 function createGame() {
   NET.role = 'host';
-  $('home').hidden = true; $('app').hidden = false;
+  $('home').hidden = true;
   S = freshState();
+  S.hostPid = NET.pid;
+  S.players.push({pid:NET.pid, name:NET.name, team:null, online:true});
   render();
   openRoom();
 }
@@ -1198,7 +1311,8 @@ function goHome() {
   NET.pending.clear();
   clearInterval(timerId); clearInterval(moveId);
   try { sessionStorage.removeItem('trivial-host'); } catch {}
-  S = null; modalKey = '';
+  S = null; modalKey = ''; closeModal();
+  $('lobby').innerHTML = '';
   showHome();
 }
 function buildLegend() {
