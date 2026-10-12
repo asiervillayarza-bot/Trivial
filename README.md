@@ -15,6 +15,10 @@ Cada jugador juega desde su ordenador o su móvil.
 
 Atajos: teclas 1–4 para responder, Intro para continuar.
 
+### Probar solo con bots
+
+En la sala, quien crea la partida tiene «Bots para probar»: cada botón «+ Bot» añade un bot a ese equipo. Los bots juegan solos cuando les toca (tiran, eligen casilla y aciertan más o menos 2 de cada 3) y, si están en tu equipo, te proponen una respuesta en el chat. Así se puede probar el juego sin nadie más.
+
 ### Conexión
 
 - El navegador de quien crea la partida hace de enlace entre todos: si cierra la página, la partida se corta (si solo la recarga, se recupera con el mismo código).

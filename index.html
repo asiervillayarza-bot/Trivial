@@ -119,6 +119,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 .hub .roller{font-weight:800;font-size:clamp(13px,2.6cqw,19px);background:rgba(255,255,255,.1);padding:.2em .9em;border-radius:999px}
 .chip.turn{background:var(--ok);color:#06301a;font-weight:800}
 .chip i{font-style:normal;margin-right:3px;color:#f5c518}
+.dot.mini{width:18px;height:18px;font-size:11px;display:inline-grid;margin-right:6px;vertical-align:-3px;box-shadow:0 0 0 1.5px #fff}
 .chip.me i,.chip.turn i{color:inherit}
 .team .jointeam{grid-column:2/-1;justify-self:start}
 
@@ -158,7 +159,7 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 .tcard:hover{box-shadow:inset 0 4px 0 var(--tc),inset 0 0 0 2px var(--line)}
 .tcard.mine{box-shadow:inset 0 4px 0 var(--tc),inset 0 0 0 2px var(--ink)}
 .tchead{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px}
-.tname{font-weight:800;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.tname{font-weight:800;font-size:17px;line-height:1.2;overflow-wrap:break-word;min-width:0}
 .tcard .join{font-size:13px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--bg);color:var(--muted)}
 .tcard.mine .join{background:var(--ok);color:#06301a}
 .tbody .members{font-size:14px}
@@ -914,7 +915,7 @@ function membersHTML(k) {
   if (!ps.length) return '';
   return `<div class="members">` + ps.map(p =>
     `<span class="chip${p.pid === NET.pid ? ' me' : ''}${p.online ? '' : ' off'}${S.phase !== 'setup' && p.pid === S.roller ? ' turn' : ''}">` +
-    `${p.pid === S.hostPid ? '<i title="Ha creado la partida">★</i>' : ''}${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span>`).join('') + `</div>`;
+    `${p.pid === S.hostPid ? '<i title="Ha creado la partida">★</i>' : ''}${p.bot ? '<i title="Bot">🤖</i>' : ''}${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span>`).join('') + `</div>`;
 }
 
 // Redibuja un panel sin perder el foco ni el cursor del campo de texto que se está escribiendo.
@@ -1034,7 +1035,11 @@ function renderLobby() {
         [2,3,4,5,6].map(n => `<button aria-pressed="${n === S.setupCount}" data-n="${n}">${n}</button>`).join('') + `</div></div>` +
       `<div class="field"><label>Nombres de los equipos</label><div class="names">${names}</div></div>` +
       `<div class="field"><label>Tiempo para responder</label><div class="seg" id="timeSeg">` +
-        [[0,'Sin límite'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div></section>`;
+        [[0,'Sin límite'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div>` +
+      `<div class="field"><label>Bots para probar</label><div class="seg" id="botSeg">` +
+        Array.from({length:S.setupCount}, (_, k) => `<button data-k="${k}" title="Añadir un bot al equipo ${k+1}"><span class="dot mini" style="background:${TEAM_COLORS[k].c};color:${TEAM_COLORS[k].ink}">${k+1}</span>+ Bot</button>`).join('') + `</div>` +
+        (S.players.some(p => p.bot) ? `<button class="link linkbtn" id="clearBots">Quitar todos los bots</button>` : `<p class="hint">Juegan solos cuando les toca. Útil para probar sin amigos.</p>`) +
+      `</div></section>`;
   }
   const startArea = isHost()
     ? `<div class="startarea"><button class="btn big" id="startBtn"${filled >= 2 ? '' : ' disabled'}>Empezar partida</button>` +
@@ -1091,6 +1096,8 @@ function renderLobby() {
   };
   $('timeSeg').onclick = e => { const b = e.target.closest('button'); if (b) { S.timeLimit = +b.dataset.v; render(); } };
   $('startBtn').onclick = startGame;
+  $('botSeg').onclick = e => { const b = e.target.closest('button'); if (b) addBot(+b.dataset.k); };
+  if ($('clearBots')) $('clearBots').onclick = () => { S.players = S.players.filter(p => !p.bot); render(); };
 }
 async function drawQR(el, cached) {
   el.dataset.room = NET.room;
@@ -1150,6 +1157,61 @@ function nextTeam(msg) {
   beginTurn(!!msg, true);
 }
 // Si el equipo al que le toca se queda sin nadie conectado, pierde el turno a los 15 s.
+/* ---------- Bots para probar ----------
+   Son jugadores que viven en el navegador de quien crea la partida y juegan solos cuando les toca. */
+const BOT_NAMES = ['Robotina', 'Chip', 'Byte', 'Pixel', 'Tuerca', 'Circuito', 'Bit', 'Señal', 'Voltio', 'Gigas', 'Sensor', 'Router'];
+function addBot(k) {
+  if (S.phase !== 'setup' || S.players.length >= 80) return;
+  const used = new Set(S.players.map(p => p.name));
+  const name = 'Bot ' + (BOT_NAMES.find(n => !used.has('Bot ' + n)) || BOT_NAMES[rnd(BOT_NAMES.length)] + ' ' + (S.players.length + 1));
+  S.players.push({pid:'bot-' + Math.random().toString(36).slice(2, 9), name, team:k, online:true, bot:true});
+  render();
+}
+const isBot = pid => { const p = S.players.find(p => p.pid === pid); return !!(p && p.bot); };
+let botKey = '', botAt = 0;
+const votedQ = new Set();
+setInterval(() => {
+  if (!S || !isHost() || ['setup','won','moving','rolling'].includes(S.phase)) return;
+  const q = S.q;
+  // Un bot compañero propone una respuesta mientras responde una persona de su equipo.
+  if (S.phase === 'question' && q && q.picked === null && !isBot(S.roller)) {
+    teamPlayers(S.turn).filter(p => p.bot && !votedQ.has(q.id + p.pid)).forEach(p => {
+      if (Date.now() - (q.shownAt || 0) < 2500) return;
+      votedQ.add(q.id + p.pid);
+      const right = q.options.indexOf(q.answer);
+      postChat(p.pid, {text:Math.random() < .5 ? '¡Creo que lo sé!' : 'Mmm… yo diría esta'});
+      postChat(p.pid, {vote:Math.random() < .65 ? right : rnd(4), q:q.id});
+    });
+  }
+  // ¿Qué tiene que hacer un bot ahora?
+  let who = null, a = null, v = null;
+  if (isBot(S.roller)) {
+    if (S.phase === 'roll') a = 'roll';
+    else if (S.phase === 'choose') {
+      who = S.roller; a = 'dest';
+      const t = S.teams[S.turn];
+      const good = S.dests.find(c => CELLS[c].type === 'hq' && !t.wedges[CELLS[c].cat]);
+      v = good !== undefined ? good : S.dests[rnd(S.dests.length)];
+    }
+    else if (S.phase === 'question' && q && q.picked === null) { a = 'answer'; v = {q:q.id, i:Math.random() < .65 ? q.options.indexOf(q.answer) : rnd(4)}; }
+    else if (S.phase === 'question' && q) { a = 'cont'; v = q.id; }
+    else if (S.phase === 'final' && !S.picking) a = 'final';
+    who = S.roller;
+  }
+  if (S.phase === 'final' && S.picking) {
+    // La categoría final la elige un bot de otro equipo solo si no hay personas que puedan elegirla.
+    const others = S.players.filter(p => p.online && p.team !== null && p.team !== S.turn);
+    if (others.length && others.every(p => p.bot)) { who = others[0].pid; a = 'cat'; v = rnd(6); }
+    else a = null;
+  }
+  if (!a) { botKey = ''; return; }
+  const key = [S.phase, S.turn, q && q.id, q && q.picked, S.picking].join('|');
+  if (key !== botKey) { botKey = key; botAt = Date.now() + (a === 'answer' ? 3500 : a === 'cont' ? 2200 : 1300); return; }
+  if (Date.now() < botAt) return;
+  botKey = '';
+  perform(who, a, v);
+}, 300);
+
 let awaySince = null;
 setInterval(() => {
   if (!S || !isHost() || ['setup','won','moving','rolling'].includes(S.phase) || teamPlayers(S.turn).length) { awaySince = null; return; }
@@ -1206,7 +1268,7 @@ function draw(cat) {
 function ask(cat, kind) {
   const q = QUESTIONS[cat][draw(cat)];
   S.qn++;
-  S.q = {id:S.qn, cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null,
+  S.q = {id:S.qn, shownAt:Date.now(), cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null,
          deadline:S.timeLimit ? Date.now() + S.timeLimit * 1000 : null};
   S.phase = 'question'; S.picking = false;
   render();
@@ -1372,7 +1434,7 @@ function start(data) {
   S = Object.assign(freshState(), saved && saved.S ? saved.S : {});
   NET.room = saved && saved.room || null;
   // Los demás vuelven a conectarse solos y conservan su equipo; en la sala se quita a quien no vuelva.
-  S.players.forEach(p => p.online = p.pid === NET.pid);
+  S.players.forEach(p => p.online = p.pid === NET.pid || !!p.bot);
   if (S.phase === 'setup') setTimeout(() => {
     if (S && S.phase === 'setup' && S.players.some(p => !p.online)) { S.players = S.players.filter(p => p.online); render(); }
   }, 20000);
