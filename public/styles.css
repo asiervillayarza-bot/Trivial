@@ -260,6 +260,13 @@ details ul{margin:10px 0 0;padding-left:18px;color:var(--muted);display:flex;fle
 .catpick button{display:flex;align-items:center;gap:12px;border:0;border-radius:18px;padding:18px;font-family:var(--font-display);font-weight:800;font-size:21px;text-align:left}
 .catpick button svg{width:28px;height:28px;flex:none}
 .catpick button:disabled{opacity:.6;cursor:default}
+.ftrack{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ftrack span{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--c);opacity:.35}
+.ftrack span svg{width:20px;height:20px}
+.ftrack span.now{opacity:1;box-shadow:0 0 0 3px var(--ink)}
+.ftrack span.ok{opacity:1;background:var(--ok)}
+.ftrack span.ko{opacity:1;background:var(--bad)}
+.ftrack b{margin-left:auto;font-family:var(--font-display);font-weight:800;font-size:22px}
 .win{font-family:var(--font-display);font-weight:800;font-size:clamp(36px,6vw,64px);margin:0;line-height:1;text-wrap:balance}
 
 @media (prefers-reduced-motion:reduce){

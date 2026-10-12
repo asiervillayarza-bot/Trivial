@@ -5,6 +5,7 @@ import {QUESTIONS} from './questions.js';
 
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const FINAL_TO_WIN = 4; // aciertos necesarios en la ronda final (de 6)
 const BOT_NAMES = ['Robotina', 'Chip', 'Byte', 'Pixel', 'Tuerca', 'Circuito', 'Bit', 'Señal', 'Voltio', 'Gigas', 'Sensor', 'Router'];
 
 // Tiempos en milisegundos (los tests los acortan).
@@ -19,7 +20,7 @@ export const DEFAULT_TIMES = {
 export function freshState() {
   return {
     phase:'setup', setupCount:4, setupNames:DEFAULT_NAMES.slice(), timeLimit:30,
-    teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, qn:0, picking:false, msg:'', winner:null,
+    teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, qn:0, final:null, msg:'', winner:null,
     players:[], // {pid, name, team, online, bot?, leftAt?}
     hostPid:null, // quien dirige la partida (ajustes, empezar, bots)
     roller:null,  // jugador del equipo en turno al que le toca tirar y responder
@@ -81,8 +82,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     else if (a === 'dest') chooseDest(+v);
     else if (a === 'answer') { if (v && S.q && S.q.id === v.q && Number.isInteger(v.i) && v.i >= 0 && v.i < 4) answer(v.i); }
     else if (a === 'cont') { if (S.q && S.q.id === v) afterAnswer(); }
-    else if (a === 'final') openFinalPicker();
-    else if (a === 'cat') { if (Number.isInteger(v) && v >= 0 && v < 6) pickFinalCat(v); }
+    else if (a === 'final') startFinal();
     else if (a === 'chat' && v && typeof v === 'object') postChat(pid, v);
     else if (a === 'team') {
       const p = S.players.find(p => p.pid === pid), max = S.phase === 'setup' ? S.setupCount : S.teams.length;
@@ -171,11 +171,11 @@ export function createGame({hooks, saved = null, times = {}}) {
   }
   function beginTurn(keepMsg, newTurn) {
     const t = S.teams[S.turn];
-    S.picking = false;
+    S.final = null;
     if (newTurn) assignRoller(true);
     if (t.wedges.every(Boolean)) {
       S.phase = 'final';
-      S.msg = '¡Tiene los 6 quesitos! Los demás equipos eligen la categoría.';
+      S.msg = '¡Tiene los 6 quesitos! Ronda final: 6 preguntas, una de cada categoría. Hay que acertar 4.';
     } else {
       S.phase = 'roll';
       if (!keepMsg) S.msg = '';
@@ -241,7 +241,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     S.qn++;
     S.q = {id:S.qn, shownAt:Date.now(), cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null,
            deadline:S.timeLimit ? Date.now() + S.timeLimit * 1000 : null};
-    S.phase = 'question'; S.picking = false;
+    S.phase = 'question';
     changed();
   }
   function answer(i) {
@@ -250,7 +250,11 @@ export function createGame({hooks, saved = null, times = {}}) {
     q.picked = i;
     q.ok = i >= 0 && q.options[i] === q.answer;
     if (q.ok && q.kind === 'wedge') S.teams[S.turn].wedges[q.cat] = true;
-    if (q.ok && q.kind === 'final') S.winner = S.turn;
+    if (q.kind === 'final') {
+      if (q.ok) S.final.ok++; else S.final.ko++;
+      S.final.res.push(q.ok);
+      if (S.final.ok >= FINAL_TO_WIN) S.winner = S.turn;
+    }
     changed();
   }
   function afterAnswer() {
@@ -258,17 +262,21 @@ export function createGame({hooks, saved = null, times = {}}) {
     if (S.phase !== 'question' || !q || q.picked === null) return;
     S.q = null;
     if (S.winner !== null) { S.phase = 'won'; return changed(); }
+    if (q.kind === 'final') {
+      // Ronda final: sigue con la siguiente categoría salvo que ya no pueda llegar a 4 aciertos.
+      const F = S.final;
+      if (F.ko > F.cats.length - FINAL_TO_WIN) return nextTeam(`${S.teams[S.turn].name} no ha llegado a ${FINAL_TO_WIN} aciertos en la ronda final.`);
+      F.idx++;
+      return ask(F.cats[F.idx], 'final');
+    }
     if (q.ok) { S.msg = q.kind === 'wedge' ? '¡Quesito nuevo! Sigue tirando.' : '¡Bien! Sigue tirando.'; beginTurn(true, false); }
     else nextTeam();
   }
-  function openFinalPicker() {
+  // Ronda final: una pregunta de cada categoría, en orden aleatorio; gana quien acierte 4 de 6.
+  function startFinal() {
     if (S.phase !== 'final') return;
-    S.picking = true;
-    changed();
-  }
-  function pickFinalCat(k) {
-    if (S.phase !== 'final' || !S.picking) return;
-    ask(k, 'final');
+    S.final = {cats:shuffle([0, 1, 2, 3, 4, 5]), idx:0, ok:0, ko:0, res:[]};
+    ask(S.final.cats[0], 'final');
   }
 
   /* ---------- Bots para probar ---------- */
@@ -307,16 +315,10 @@ export function createGame({hooks, saved = null, times = {}}) {
       }
       else if (S.phase === 'question' && q && q.picked === null) { a = 'answer'; v = {q:q.id, i:Math.random() < .65 ? q.options.indexOf(q.answer) : rnd(4)}; }
       else if (S.phase === 'question' && q) { a = 'cont'; v = q.id; }
-      else if (S.phase === 'final' && !S.picking) a = 'final';
-    }
-    if (S.phase === 'final' && S.picking) {
-      // La categoría final la elige un bot de otro equipo solo si no hay personas que puedan elegirla.
-      const others = S.players.filter(p => p.online && p.team !== null && p.team !== S.turn);
-      if (others.length && others.every(p => p.bot)) { who = others[0].pid; a = 'cat'; v = rnd(6); }
-      else a = null;
+      else if (S.phase === 'final') a = 'final';
     }
     if (!a) { botKey = ''; return; }
-    const key = [S.phase, S.turn, q && q.id, q && q.picked, S.picking].join('|');
+    const key = [S.phase, S.turn, q && q.id, q && q.picked].join('|');
     if (key !== botKey) { botKey = key; botAt = now + (a === 'answer' ? T.botAnswer : a === 'cont' ? T.botCont : T.bot); return; }
     if (now < botAt) return;
     botKey = '';

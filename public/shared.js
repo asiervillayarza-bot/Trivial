@@ -44,6 +44,5 @@ export function allowed(S, pid, a) {
   const team = playerTeam(S, pid);
   if (a === 'chat') return S.phase !== 'setup' && team !== null;
   if (team === null || !S.teams[team]) return false;
-  if (a === 'cat') return team !== S.turn; // la categoría final la eligen los demás equipos
   return team === S.turn && S.roller === pid; // solo tira y responde el jugador al que le toca
 }

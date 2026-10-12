@@ -174,3 +174,40 @@ test('las preguntas están bien formadas: 6 categorías, 4 opciones distintas y 
     });
   });
 });
+
+// Prepara una partida en la que el equipo en turno ya tiene los 6 quesitos.
+function toFinal() {
+  const t = threePlayers();
+  t.g.perform('ane', 'start');
+  const S = t.S();
+  S.teams[S.turn].wedges = [true, true, true, true, true, true];
+  S.phase = 'final';
+  return t;
+}
+function answerFinal(t, right) {
+  const S = t.S(), q = S.q;
+  const i = right ? q.options.indexOf(q.answer) : q.options.findIndex(o => o !== q.answer);
+  t.g.perform(S.roller, 'answer', {q:q.id, i});
+  t.g.perform(S.roller, 'cont', q.id);
+}
+
+test('ronda final: una pregunta de cada categoría y se gana con 4 aciertos', () => {
+  const t = toFinal(), team = t.S().turn;
+  t.g.perform(t.S().roller, 'final');
+  const cats = [];
+  for (const right of [true, false, true, true, true]) { cats.push(t.S().q.cat); answerFinal(t, right); }
+  assert.equal(new Set(cats).size, 5, 'cada pregunta es de una categoría distinta');
+  assert.equal(t.S().phase, 'won');
+  assert.equal(t.S().winner, team);
+});
+
+test('ronda final: con 3 fallos pasa el turno y se repite la próxima vez', () => {
+  const t = toFinal(), team = t.S().turn;
+  t.g.perform(t.S().roller, 'final');
+  for (const right of [false, true, false]) answerFinal(t, right);
+  assert.equal(t.S().turn, team, 'con 2 fallos sigue jugando');
+  answerFinal(t, false);
+  assert.notEqual(t.S().turn, team, 'con 3 fallos pasa el turno');
+  assert.equal(t.S().final, null);
+  assert.equal(t.S().winner, null);
+});
