@@ -1,4 +1,4 @@
-# Trivial
+# Quesitos
 
 Juego de preguntas por equipos al estilo Trivial para jugar con amigos, cada uno desde su ordenador o su móvil, uniéndose a una sala con un código o un enlace.
 
