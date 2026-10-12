@@ -1,0 +1,16 @@
+{
+  "name": "quesitos",
+  "private": true,
+  "type": "module",
+  "description": "Quesitos: el trivial para jugar con tus amigos, cada uno desde su pantalla.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test tests/game.test.js",
+    "test:e2e": "node tests/e2e.js"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.1",
+    "wrangler": "4.139.0"
+  }
+}
