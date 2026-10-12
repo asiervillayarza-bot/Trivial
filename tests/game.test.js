@@ -44,6 +44,21 @@ test('quien crea la sala la dirige y solo empieza con 2 equipos con gente', () =
   assert.equal(t.S().teams.length, 2, 'los equipos vacíos no juegan');
 });
 
+test('cualquiera del equipo puede cambiar su nombre en la sala, pero no el de otro equipo', () => {
+  const t = threePlayers();
+  t.g.perform('jon', 'teamName', {name:'Los Txapeldunak'});
+  assert.equal(t.S().setupNames[0], 'Los Txapeldunak');
+  t.g.perform('mikel', 'teamName', {name:'Los Mejores'});
+  assert.equal(t.S().setupNames[1], 'Los Mejores', 'solo cambia el suyo');
+  assert.equal(t.S().setupNames[0], 'Los Txapeldunak');
+  t.g.join('leire', 'Leire');
+  t.g.perform('leire', 'teamName', {name:'Sin equipo'});
+  assert.ok(!t.S().setupNames.includes('Sin equipo'), 'sin equipo no puede renombrar');
+  t.g.perform('ane', 'start');
+  t.g.perform('jon', 'teamName', {name:'Ya empezada'});
+  assert.equal(t.S().teams[0].name, 'Los Txapeldunak', 'durante la partida no cambia');
+});
+
 test('solo tira y responde el jugador al que le toca, y el turno rota dentro del equipo', async () => {
   const t = threePlayers();
   t.g.perform('ane', 'start');

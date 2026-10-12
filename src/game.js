@@ -93,6 +93,9 @@ export function createGame({hooks, saved = null, times = {}}) {
     } else if (a === 'name') {
       const p = S.players.find(p => p.pid === pid);
       if (p) { p.name = cleanName(v); changed(); }
+    } else if (a === 'teamName' && v && typeof v.name === 'string') {
+      S.setupNames[playerTeam(S, pid)] = v.name.replace(/\s+/g, ' ').slice(0, 24);
+      changed();
     } else if (a === 'setup' && v && typeof v === 'object') setup(v);
     else if (a === 'start') startGame();
     else if (a === 'reset') resetToSetup();
