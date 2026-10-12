@@ -4,7 +4,13 @@ import {CATS, TEAM_COLORS, DEFAULT_NAMES, N, CELLS, allowed, cleanCode, cleanNam
 
 const QR_URL = 'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const STEP = 360 / N;
+// Ángulos de cada casilla del anillo: las de quesito son casi el doble de anchas que las normales.
+const HQ_WIDTH = 1.9;
+const CELL_ANG = (() => {
+  const w = CELLS.map(c => c.type === 'hq' ? HQ_WIDTH : 1), unit = 360 / w.reduce((a, b) => a + b);
+  let a = -90 - w[0] * unit / 2;
+  return w.map(x => { const a0 = a; a += x * unit; return {a0, a1:a, ac:(a0 + a) / 2}; });
+})();
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -116,7 +122,7 @@ function sector(cx, cy, r, a0, a1) {
 function buildBoard() {
   let html = '';
   CELLS.forEach((c, i) => {
-    const ac = -90 + i * STEP, a0 = ac - STEP/2, a1 = ac + STEP/2;
+    const {ac, a0, a1} = CELL_ANG[i];
     const hq = c.type === 'hq';
     const fill = c.type === 'again' ? 'var(--neutral)' : CATS[c.cat].color;
     const label = c.type === 'again' ? 'Tira otra vez' : (hq ? 'Quesito de ' : '') + CATS[c.cat].name;
@@ -175,25 +181,29 @@ function render() {
     else { el.removeAttribute('tabindex'); el.removeAttribute('role'); }
   });
   // fichas
-  let ph = '';
+  let ph = '', top = '';
   const byCell = {};
   S.teams.forEach((t, k) => (byCell[t.pos] = byCell[t.pos] || []).push(k));
   Object.entries(byCell).forEach(([cell, ks]) => {
-    const ac = -90 + cell * STEP, m = ks.length;
+    const ac = CELL_ANG[cell].ac, m = ks.length, hq = CELLS[cell].type === 'hq';
     ks.forEach((k, j) => {
-      const row = Math.floor(j / 2), rows = Math.ceil(m / 2), col = m === 1 ? 0 : (j % 2 ? 1 : -1);
-      const rr = 427 + (row - (rows - 1) / 2) * 30;
+      // Varias fichas en la misma casilla: de dos en dos (tres en las de quesito, que son más anchas)
+      const per = hq ? 3 : 2, row = Math.floor(j / per), rows = Math.ceil(m / per);
+      const inRow = Math.min(per, m - row * per), col = (j % per) - (inRow - 1) / 2;
+      const rr = 425 + (row - (rows - 1) / 2) * 44;
       const [bx, by] = polar(rr, ac);
       const ta = (ac + 90) * Math.PI / 180;
-      const x = bx + Math.cos(ta) * col * 15, y = by + Math.sin(ta) * col * 15;
+      const x = bx + Math.cos(ta) * col * 40, y = by + Math.sin(ta) * col * 40;
       const t = S.teams[k], cur = k === S.turn && S.phase !== 'setup';
-      ph += `<g class="piece" style="transform:translate(${f(x)}px,${f(y)}px)">` +
-        (cur ? `<circle r="22" fill="none" stroke="#FFC93C" stroke-width="5"/>` : '') +
-        `<circle r="14" fill="${t.color}" stroke="${cur ? '#0e2540' : '#fff'}" stroke-width="3"/>` +
-        `<text text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="800" fill="${t.ink}">${k+1}</text></g>`;
+      const g = `<g class="piece${cur ? ' cur' : ''}" style="transform:translate(${f(x)}px,${f(y)}px)">` +
+        (cur ? `<circle r="29" fill="none" stroke="#FFC93C" stroke-width="6"/>` : '') +
+        `<circle r="23" fill="#0C1A2E" cy="2"/>` +
+        `<circle r="19" fill="${t.color}" stroke="#fff" stroke-width="3.5"/>` +
+        `<text text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="${t.ink}">${k+1}</text></g>`;
+      if (cur) top = g; else ph += g; // la ficha del equipo en turno, siempre por encima
     });
   });
-  $('pieces').innerHTML = ph;
+  $('pieces').innerHTML = ph + top;
   renderHub();
   renderSide();
   renderRoom();
