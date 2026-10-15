@@ -65,12 +65,13 @@ function connect() {
       renderChat();
     } else if (m.t === 'error') {
       if (m.code === 'taken') { location.replace(joinURL(newCode()) + '&crear=1'); return; } // código ocupado: otro
+      if (m.code === 'kicked') { NET.status = 'kicked'; location.replace(homeURL() + '?expulsado=1'); return; }
       NET.status = m.code === 'full' ? 'full' : 'missing';
       render();
     }
   };
   ws.onclose = () => {
-    if (NET.ws !== ws || NET.status === 'missing' || NET.status === 'full') return;
+    if (NET.ws !== ws || ['missing', 'full', 'kicked'].includes(NET.status)) return;
     NET.status = NET.everConnected ? 'lost' : 'connecting';
     render();
     NET.retry = setTimeout(connect, Math.min(1000 * 2 ** NET.fails++, 8000));
@@ -266,13 +267,19 @@ function membersHTML(k) {
   return `<div class="members">` + ps.map(p =>
     `<span class="chip${p.pid === NET.pid ? ' me' : ''}${p.online ? '' : ' off'}${S.phase !== 'setup' && p.pid === S.roller ? ' turn' : ''}">` +
     `${p.pid === S.hostPid ? '<i title="Dirige la partida">★</i>' : ''}${p.bot ? BOT_ICON : ''}${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}` +
-    `${S.phase !== 'setup' && p.pid === S.roller ? ' · tira' : ''}</span>`).join('') + `</div>`;
+    `${S.phase !== 'setup' && p.pid === S.roller ? ' · tira' : ''}${kickBtn(p)}</span>`).join('') + `</div>`;
+}
+// Botón para que quien dirige la sala expulse a alguien (no a sí mismo).
+function kickBtn(p) {
+  if (!amHost() || p.pid === S.hostPid) return '';
+  const n = esc(p.name || 'Sin nombre');
+  return `<span class="kick" role="button" tabindex="0" data-kick="${esc(p.pid)}" data-name="${n}" title="Expulsar a ${n}" aria-label="Expulsar a ${n}">✕</span>`;
 }
 function avatarsHTML(k) {
   const ps = S.players.filter(p => p.team === k);
   return `<div class="members">` + ps.map(p =>
     `<span class="avatar${p.online ? '' : ' off'}"><b>${p.bot ? BOT_ICON : esc(initial(p.name))}</b>` +
-    `<span>${p.pid === S.hostPid ? '★ ' : ''}${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span></span>`).join('') + `</div>`;
+    `<span>${p.pid === S.hostPid ? '★ ' : ''}${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span>${kickBtn(p)}</span>`).join('') + `</div>`;
 }
 
 // Redibuja un panel sin perder el foco, el cursor ni lo que se está escribiendo en un campo de texto.
@@ -377,7 +384,7 @@ function renderLobby() {
         : `<div class="lobwait"><strong>${NET.status === 'missing' ? 'Sala no encontrada' : 'Conectando…'}</strong><span class="hint">${esc(connText())}</span>` +
           (NET.status === 'missing' ? `<a class="btn small" href="${esc(homeURL())}" style="align-self:flex-start;text-decoration:none">Volver al inicio</a>` : '') + `</div>`) +
       (loose.length ? `<div class="field"><span class="eyebrow">Sin equipo todavía</span><div class="members">` +
-        loose.map(p => `<span class="chip${p.pid === NET.pid ? ' me' : ''}">${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}</span>`).join('') + `</div></div>` : '') +
+        loose.map(p => `<span class="chip${p.pid === NET.pid ? ' me' : ''}">${esc(p.name || 'Sin nombre')}${p.pid === NET.pid ? ' (tú)' : ''}${kickBtn(p)}</span>`).join('') + `</div></div>` : '') +
     `</section>`;
 
   // Invitar (enlace y QR)
@@ -705,6 +712,7 @@ function showHome() {
       `</div>` +
     `</div>`;
   $('createBtn').onclick = () => { location.href = joinURL(newCode()) + '&crear=1'; };
+  if (new URLSearchParams(location.search).has('expulsado')) $('homeErr').textContent = 'Te han expulsado de la partida.';
   $('homeCode').addEventListener('input', () => { $('homeCode').classList.remove('need'); $('homeErr').textContent = ''; });
   $('joinHome').onsubmit = e => {
     e.preventDefault();
@@ -721,6 +729,16 @@ function buildLegend() {
   $('legend').innerHTML = CATS.map((c, k) => `<div><b style="background:${c.color}">${catIcon(k, c.ink)}</b>${c.name}</div>`).join('') +
     `<div><b style="background:var(--neutral)">${dieIcon()}</b>Tira otra vez</div>`;
 }
+
+// Expulsar: se escucha antes que nada para que no cuente como clic en la tarjeta del equipo.
+function onKick(e) {
+  const b = e.target.closest && e.target.closest('.kick');
+  if (!b || (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); e.stopPropagation();
+  if (confirm(`¿Expulsar a ${b.dataset.name} de la partida? No podrá volver a entrar.`)) act('kick', b.dataset.kick);
+}
+document.addEventListener('click', onKick, true);
+document.addEventListener('keydown', onKick, true);
 
 /* ---------- Arranque ---------- */
 // Identidad del jugador: se guarda por pestaña, así dos pestañas del mismo navegador son jugadores distintos.

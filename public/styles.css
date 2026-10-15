@@ -72,6 +72,8 @@ input{font:inherit}
 .avatar b{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:14px;background:var(--tc);color:var(--tink)}
 .avatar b svg{width:18px;height:18px}
 .avatar.off{opacity:.45}
+.kick{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;margin-left:2px;border-radius:50%;font-size:12px;font-weight:800;line-height:1;color:var(--muted);cursor:pointer}
+.kick:hover,.kick:focus-visible{background:var(--bad);color:#3a0008;outline:none}
 .avatar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .status{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--muted)}
 .status b{width:9px;height:9px;border-radius:50%;flex:none;background:var(--bad)}

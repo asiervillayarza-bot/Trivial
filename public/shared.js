@@ -39,6 +39,7 @@ export const playerName = (S, pid) => { const p = S.players.find(p => p.pid === 
 export function allowed(S, pid, a) {
   if (['setup', 'start', 'addBot', 'clearBots'].includes(a)) return pid === S.hostPid && S.phase === 'setup';
   if (a === 'reset') return pid === S.hostPid && S.phase !== 'setup';
+  if (a === 'kick') return pid === S.hostPid; // quien dirige la sala puede expulsar a cualquiera, en la sala o en plena partida
   if (a === 'team' || a === 'name') return S.phase === 'setup' || playerTeam(S, pid) === null;
   if (a === 'teamName') return S.phase === 'setup' && playerTeam(S, pid) !== null; // cualquiera del equipo puede renombrarlo
   const team = playerTeam(S, pid);

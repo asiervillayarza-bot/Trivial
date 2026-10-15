@@ -25,6 +25,7 @@ export function freshState() {
     openMode:1, // preguntas para escribir (sin opciones): 0 ninguna, 1 una de cada tres, 2 todas las que se puedan
     teams:[], turn:0, die:null, dests:[], decks:[[],[],[],[],[],[]], q:null, qn:0, final:null, msg:'', winner:null,
     players:[], // {pid, name, team, online, bot?, leftAt?}
+    kicked:[],  // jugadores expulsados: no pueden volver a entrar
     hostPid:null, // quien dirige la partida (ajustes, empezar, bots)
     roller:null,  // jugador del equipo en turno al que le toca tirar y responder
   };
@@ -108,6 +109,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     else if (a === 'reset') resetToSetup();
     else if (a === 'addBot') addBot(+v);
     else if (a === 'clearBots') { S.players = S.players.filter(p => !p.bot); changed(); }
+    else if (a === 'kick') kick(v);
   }
   function setup(v) {
     if (Number.isInteger(v.count) && v.count >= 2 && v.count <= 6) {
@@ -119,6 +121,17 @@ export function createGame({hooks, saved = null, times = {}}) {
     if (Array.isArray(v.names)) S.setupNames = DEFAULT_NAMES.map((d, k) => typeof v.names[k] === 'string' ? v.names[k].slice(0, 24) : S.setupNames[k]);
     changed();
   }
+  // Quien dirige la sala expulsa a un jugador (o a un bot): sale de la partida y no puede volver a entrar.
+  function kick(pid) {
+    const p = S.players.find(p => p.pid === pid);
+    if (!p || pid === S.hostPid) return;
+    S.players = S.players.filter(x => x !== p);
+    if (!p.bot) S.kicked = [...(S.kicked || []), pid].slice(-200);
+    if (S.phase !== 'setup' && p.team === S.turn && S.roller === pid) assignRoller(false); // le tocaba: sigue otro de su equipo
+    hooks.kicked && hooks.kicked(pid);
+    changed();
+  }
+  const isKicked = pid => (S.kicked || []).includes(pid);
   // En cada turno de un equipo tira uno de sus jugadores, por orden; si se desconecta, pasa al siguiente.
   function assignRoller(advance) {
     const ps = teamPlayers(S, S.turn), t = S.teams[S.turn];
@@ -157,7 +170,7 @@ export function createGame({hooks, saved = null, times = {}}) {
     // Vuelve a la sala con los mismos equipos y jugadores.
     timers.forEach(clearTimeout); timers.clear();
     const players = S.players.filter(p => p.online).map(p => ({...p, team:p.team !== null && S.teams[p.team] ? S.teams[p.team].setup : p.team}));
-    const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, openMode:S.openMode, players, hostPid:S.hostPid};
+    const keep = {setupCount:S.setupCount, setupNames:S.setupNames, timeLimit:S.timeLimit, openMode:S.openMode, kicked:S.kicked, players, hostPid:S.hostPid};
     S = Object.assign(freshState(), keep);
     changed();
   }
@@ -383,7 +396,7 @@ export function createGame({hooks, saved = null, times = {}}) {
   // Lo que reciben los navegadores: sin mazos ni la respuesta correcta hasta que se ha contestado.
   function publicState() {
     const P = JSON.parse(JSON.stringify(S));
-    delete P.decks;
+    delete P.decks; delete P.kicked;
     P.players.forEach(p => delete p.leftAt);
     if (P.q) {
       if (P.q.picked === null) delete P.q.answer;
@@ -396,7 +409,7 @@ export function createGame({hooks, saved = null, times = {}}) {
   }
 
   return {
-    join, leave, perform, tick, publicState,
+    join, leave, perform, tick, publicState, isKicked,
     get state() { return S; },
     snapshot: () => ({S, chat:[...CHAT], chatN}),
     chatFor: team => CHAT.get(team) || [],
