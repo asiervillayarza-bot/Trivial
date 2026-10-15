@@ -57,6 +57,7 @@ function connect() {
       NET.status = 'open'; NET.everConnected = true; NET.fails = 0;
       S = m.S;
       if (S.q && S.q.left != null) S.q.deadline = Date.now() + S.q.left;
+      if (S.q && S.q.passIn != null) S.q.passAt = Date.now() + S.q.passIn;
       if (NET.chatTeam !== myTeam()) { NET.chat = []; NET.chatTeam = myTeam(); }
       render();
     } else if (m.t === 'chat') {
@@ -645,7 +646,13 @@ function showVerdict() {
   }
   v.textContent = text;
   const c = $('contBtn');
-  if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
+  if (q.passAt) { // se ha perdido el turno: pasa solo al siguiente equipo
+    const next = S.teams[(S.turn + 1) % S.teams.length].name;
+    v.insertAdjacentHTML('beforeend', `<span class="wait" id="passIn"></span>`);
+    const tick = () => { if ($('passIn') && S.q && S.q.passAt) $('passIn').textContent = `Turno de ${next} en ${Math.max(1, Math.ceil((S.q.passAt - Date.now()) / 1000))}…`; };
+    tick();
+    timerId = setInterval(tick, 200);
+  } else if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
   else v.insertAdjacentHTML('beforeend', `<span class="wait">Esperando a ${esc(S.roller ? playerName(S.roller) : t.name)}…</span>`);
 }
 // Marcador de la ronda final: una casilla por categoría con su resultado.

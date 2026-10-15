@@ -252,3 +252,23 @@ test('corrección de lo escrito: tildes, mayúsculas, erratas pequeñas y el ape
     q.slice(2).forEach(o => assert.ok(!judge(o, q[1]), `${o} no debería valer en: ${q[0]}`));
   });
 });
+
+test('al fallar, el turno pasa solo al siguiente equipo al cabo de un momento', async () => {
+  const t = threePlayers();
+  t.g.perform('ane', 'start');
+  await toQuestion(t);
+  const team = t.S().turn, q = t.S().q;
+  t.g.perform(t.S().roller, 'answer', {q:q.id, i:q.options.findIndex(o => o !== q.answer)});
+  assert.ok(t.g.publicState().q.passIn > 0, 'se avisa de cuándo pasa el turno');
+  t.g.tick(Date.now() + 1000);
+  assert.equal(t.S().turn, team, 'todavía se puede ver la respuesta');
+  t.g.tick(Date.now() + 5000);
+  assert.notEqual(t.S().turn, team, 'ha pasado el turno sin darle a nada');
+  // Si acierta, no pasa nada solo: sigue tirando cuando quiera.
+  await toQuestion(t);
+  const q2 = t.S().q, team2 = t.S().turn;
+  t.g.perform(t.S().roller, 'answer', {q:q2.id, i:q2.options.indexOf(q2.answer)});
+  t.g.tick(Date.now() + 60000);
+  assert.equal(t.S().turn, team2);
+  assert.equal(t.S().phase, 'question');
+});

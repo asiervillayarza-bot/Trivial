@@ -13,6 +13,7 @@ const BOT_NAMES = ['Robotina', 'Chip', 'Byte', 'Pixel', 'Tuerca', 'Circuito', 'B
 export const DEFAULT_TIMES = {
   roll:630, step:160,            // animación del dado y de la ficha
   bot:1300, botAnswer:3500, botCont:2200, botVote:2500,
+  pass:4500,                     // tras fallar, tiempo para ver la respuesta antes de pasar el turno solo
   away:15000,                    // equipo sin nadie conectado: pierde el turno
   hostAway:20000,                // quien creó la partida se va: otro jugador pasa a dirigirla
   setupAway:20000,               // en la sala, quien se desconecta y no vuelve desaparece
@@ -265,6 +266,9 @@ export function createGame({hooks, saved = null, times = {}}) {
       S.final.res.push(q.ok);
       if (S.final.ok >= FINAL_TO_WIN) S.winner = S.turn;
     }
+    // Si se pierde el turno, pasa solo al siguiente equipo al cabo de un momento (sin tener que darle a nada).
+    const out = q.kind === 'final' ? S.final.ko > S.final.cats.length - FINAL_TO_WIN : !q.ok;
+    if (out && S.winner === null) q.passAt = Date.now() + T.pass;
     changed();
   }
   function afterAnswer() {
@@ -329,7 +333,7 @@ export function createGame({hooks, saved = null, times = {}}) {
         const knows = Math.random() < .65;
         v = q.open ? {q:q.id, text:knows ? q.answer : 'Ni idea'} : {q:q.id, i:knows ? q.options.indexOf(q.answer) : rnd(4)};
       }
-      else if (S.phase === 'question' && q) { a = 'cont'; v = q.id; }
+      else if (S.phase === 'question' && q && !q.passAt) { a = 'cont'; v = q.id; }
       else if (S.phase === 'final') a = 'final';
     }
     if (!a) { botKey = ''; return; }
@@ -345,6 +349,8 @@ export function createGame({hooks, saved = null, times = {}}) {
   function tick(now = Date.now()) {
     // Se acabó el tiempo para responder.
     if (S.phase === 'question' && S.q && S.q.picked === null && S.q.deadline && now >= S.q.deadline) answer(-1);
+    // Se ha fallado: pasa el turno solo.
+    else if (S.phase === 'question' && S.q && S.q.passAt && now >= S.q.passAt) afterAnswer();
     // Quien dirige la partida se ha ido: pasa a dirigirla otra persona conectada.
     const host = S.players.find(p => p.pid === S.hostPid);
     if ((!host || (!host.online && now - (host.leftAt || 0) > T.hostAway))) {
@@ -379,7 +385,8 @@ export function createGame({hooks, saved = null, times = {}}) {
       if (P.q.picked === null) delete P.q.answer;
       if (P.q.open) delete P.q.options; // sin opciones: hay que escribir la respuesta
       P.q.left = S.q.deadline ? Math.max(0, S.q.deadline - Date.now()) : null;
-      delete P.q.deadline;
+      P.q.passIn = S.q.passAt ? Math.max(0, S.q.passAt - Date.now()) : null;
+      delete P.q.deadline; delete P.q.passAt;
     }
     return P;
   }
