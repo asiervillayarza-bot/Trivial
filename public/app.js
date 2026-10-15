@@ -57,6 +57,7 @@ function connect() {
       NET.status = 'open'; NET.everConnected = true; NET.fails = 0;
       S = m.S;
       if (S.q && S.q.left != null) S.q.deadline = Date.now() + S.q.left;
+      if (S.q && S.q.passIn != null) S.q.passAt = Date.now() + S.q.passIn;
       if (NET.chatTeam !== myTeam()) { NET.chat = []; NET.chatTeam = myTeam(); }
       render();
     } else if (m.t === 'chat') {
@@ -413,7 +414,7 @@ function renderLobby() {
         [[0,'Libre'],[20,'20 s'],[30,'30 s'],[45,'45 s']].map(([v,l]) => `<button aria-pressed="${v === S.timeLimit}" data-v="${v}">${l}</button>`).join('') + `</div></div>` +
       `<div class="field"><label>Preguntas para escribir</label><div class="seg" id="openSeg">` +
         [[0,'Ninguna'],[1,'Algunas'],[2,'Todas']].map(([v,l]) => `<button aria-pressed="${v === S.openMode}" data-v="${v}">${l}</button>`).join('') + `</div>` +
-        `<p class="hint">Sin opciones: hay que escribir la respuesta.${S.openMode === 1 ? ' Más o menos 1 de cada 3.' : ''}</p></div>` +
+        `<p class="hint">Sin opciones: hay que escribir la respuesta.${S.openMode === 1 ? ' Más o menos 1 de cada 3.' : ''} Las de quesito, siempre.</p></div>` +
       `<div class="field"><label>Bots para practicar</label><div class="seg" id="botSeg">` +
         Array.from({length:S.setupCount}, (_, k) => `<button data-k="${k}" title="Añadir un bot al equipo ${k+1}"><span class="dot mini" style="background:${TEAM_COLORS[k].c}"></span>+ Bot</button>`).join('') + `</div>` +
         (S.players.some(p => p.bot) ? `<button class="link linkbtn" id="clearBots">Quitar todos los bots</button>` : `<p class="hint">Juegan solos cuando les toca.</p>`) +
@@ -645,7 +646,13 @@ function showVerdict() {
   }
   v.textContent = text;
   const c = $('contBtn');
-  if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
+  if (q.passAt) { // se ha perdido el turno: pasa solo al siguiente equipo
+    const next = S.teams[(S.turn + 1) % S.teams.length].name;
+    v.insertAdjacentHTML('beforeend', `<span class="wait" id="passIn"></span>`);
+    const tick = () => { if ($('passIn') && S.q && S.q.passAt) $('passIn').textContent = `Turno de ${next} en ${Math.max(1, Math.ceil((S.q.passAt - Date.now()) / 1000))}…`; };
+    tick();
+    timerId = setInterval(tick, 200);
+  } else if (canAct('cont')) { c.textContent = btn; c.hidden = false; c.focus({preventScroll:true}); }
   else v.insertAdjacentHTML('beforeend', `<span class="wait">Esperando a ${esc(S.roller ? playerName(S.roller) : t.name)}…</span>`);
 }
 // Marcador de la ronda final: una casilla por categoría con su resultado.

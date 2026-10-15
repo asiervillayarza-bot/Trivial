@@ -88,7 +88,12 @@ try {
         assert.ok(await pl.$('.openres .right'), 'se ve la respuesta correcta');
       } else { await pl.click('.opt[data-i="0"]'); await W(500); }
       assert.notEqual((await state(ane)).q.answer, undefined, 'tras contestar se ve la respuesta');
-      await pl.click('#contBtn'); await W(500);
+      if (await pl.isVisible('#contBtn')) { await pl.click('#contBtn'); await W(500); }
+      else { // ha fallado: el turno pasa solo
+        assert.match(await pl.textContent('#verdict'), /Turno de .+ en \d/);
+        await W(5200);
+        assert.notEqual((await state(ane)).turn, st.turn, 'el turno ha pasado solo');
+      }
     } else await W(400);
   }
   assert.ok(turns.length >= 3, 'se han jugado varios turnos');

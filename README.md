@@ -12,7 +12,7 @@ Cada jugador juega desde su ordenador o su móvil.
 4. En cada turno de un equipo tira **uno de sus jugadores**, por orden: tira el dado, elige una de las dos casillas que parpadean y responde la pregunta del color de la casilla. Los demás lo ven en directo. Si acierta, vuelve a tirar; si falla, pasa el turno al siguiente equipo.
    Cada equipo tiene un **chat privado** (en el panel lateral y dentro de la pregunta). Mientras responde un compañero, los demás pueden pulsar una opción para **proponérsela**: aparece en el chat y en la propia opción.
 5. En las casillas grandes se gana un quesito. Con los 6, el equipo juega la **ronda final**: 6 preguntas seguidas, una de cada categoría en orden aleatorio. Si acierta 4, gana; si falla 3, pasa el turno y vuelve a intentarlo la próxima vez.
-6. Algunas preguntas son **para escribir**: no salen opciones y quien responde escribe la respuesta. Se corrige con manga ancha (mayúsculas, tildes, erratas pequeñas, basta con el apellido) en `src/answers.js`. Quien crea la partida elige en la sala si no hay ninguna, algunas (1 de cada 3) o todas.
+6. Algunas preguntas son **para escribir**: no salen opciones y quien responde escribe la respuesta. Se corrige con manga ancha (mayúsculas, tildes, erratas pequeñas, basta con el apellido) en `src/answers.js`. Las preguntas de quesito son siempre así; para las demás, quien crea la partida elige en la sala si no hay ninguna, algunas (1 de cada 3) o todas.
 
 Atajos: teclas 1–4 para responder, Intro para continuar.
 
