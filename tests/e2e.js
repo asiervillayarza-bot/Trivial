@@ -44,7 +44,7 @@ try {
   await mikel.waitForSelector('.tcard');
   await mikel.fill('#myName', 'Mikel'); await W(400); await mikel.click('.tcard[data-k="1"]');
   await W(600);
-  assert.deepEqual(await ane.$$eval('.tcard[data-k="0"] .avatar > span', els => els.map(e => e.textContent.replace('★ ', ''))), ['Ane (tú)', 'Jon']);
+  assert.deepEqual(await ane.$$eval('.tcard[data-k="0"] .avatar > span:not(.kick)', els => els.map(e => e.textContent.replace('★ ', ''))), ['Ane (tú)', 'Jon']);
   assert.equal(await jon.$('#startBtn'), null, 'solo quien crea la partida la puede empezar');
   // Cualquiera del equipo puede cambiar su nombre
   await jon.fill('#myTeamName', 'Los Txapeldunak'); await W(900);

@@ -37,6 +37,13 @@ export class Sala {
   makeGame(saved = null) {
     return createGame({saved, hooks:{
       changed: () => { this.broadcast(); this.scheduleSave(); },
+      kicked: pid => { // le avisa y cierra su conexión
+        for (const [ws, p] of this.sockets) if (p === pid) {
+          this.sockets.delete(ws);
+          this.send(ws, JSON.stringify({t:'error', code:'kicked'}));
+          try { ws.close(1000, 'kicked'); } catch {}
+        }
+      },
       chat: (team, msgs, pids) => {
         const data = JSON.stringify({t:'chat', team, msgs});
         for (const [ws, pid] of this.sockets) if (pids.includes(pid)) this.send(ws, data);
@@ -72,6 +79,7 @@ export class Sala {
         this.send(ws, JSON.stringify({t:'error', code:'taken'}));
         return ws.close(1000, 'taken');
       }
+      if (this.game.isKicked(msg.pid)) { this.send(ws, JSON.stringify({t:'error', code:'kicked'})); return ws.close(1000, 'kicked'); }
       for (const [other, pid] of this.sockets) if (pid === msg.pid && other !== ws) { this.sockets.delete(other); try { other.close(1000, 'replaced'); } catch {} }
       this.sockets.set(ws, msg.pid);
       if (!this.game.join(msg.pid, msg.name)) { this.send(ws, JSON.stringify({t:'error', code:'full'})); return ws.close(1000, 'full'); }

@@ -294,3 +294,28 @@ test('las preguntas de quesito son siempre para escribir, aunque en la sala se e
     assert.equal(t.g.publicState().q.options, undefined);
   }
 });
+
+test('quien dirige la sala puede expulsar a un jugador, que ya no puede volver a entrar', async () => {
+  const kicked = [];
+  const g = createGame({times:FAST, hooks:{changed() {}, chat() {}, kicked: pid => kicked.push(pid)}});
+  g.join('ane', 'Ane'); g.join('jon', 'Jon'); g.join('mikel', 'Mikel');
+  g.perform('ane', 'team', 0); g.perform('jon', 'team', 0); g.perform('mikel', 'team', 1);
+  g.perform('jon', 'kick', 'mikel');
+  assert.ok(g.state.players.some(p => p.pid === 'mikel'), 'solo quien dirige puede expulsar');
+  g.perform('ane', 'kick', 'ane');
+  assert.ok(g.state.players.some(p => p.pid === 'ane'), 'no se puede expulsar a sí mismo');
+  g.perform('ane', 'kick', 'mikel');
+  assert.ok(!g.state.players.some(p => p.pid === 'mikel'));
+  assert.deepEqual(kicked, ['mikel'], 'se avisa para cerrar su conexión');
+  assert.ok(g.isKicked('mikel'));
+  assert.equal(g.publicState().kicked, undefined, 'la lista no se envía');
+  // En plena partida: si le tocaba tirar, sigue otro de su equipo.
+  g.perform('ane', 'addBot', 1);
+  g.perform('ane', 'start');
+  g.state.turn = 0; g.state.phase = 'roll'; g.state.roller = 'jon'; // le toca a Jon
+  g.perform('ane', 'kick', 'jon');
+  assert.equal(g.state.roller, 'ane');
+  g.perform('ane', 'reset');
+  assert.ok(g.isKicked('jon') && g.isKicked('mikel'), 'sigue expulsado en una nueva partida');
+  g.stop();
+});

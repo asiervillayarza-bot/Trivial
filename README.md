@@ -13,6 +13,7 @@ Cada jugador juega desde su ordenador o su móvil.
    Cada equipo tiene un **chat privado** (en el panel lateral y dentro de la pregunta). Mientras responde un compañero, los demás pueden pulsar una opción para **proponérsela**: aparece en el chat y en la propia opción.
 5. En las casillas grandes se gana un quesito. Con los 6, el equipo juega la **ronda final**: 6 preguntas seguidas, una de cada categoría en orden aleatorio. Si acierta 4, gana; si falla 3, pasa el turno y vuelve a intentarlo la próxima vez.
 6. Algunas preguntas son **para escribir**: no salen opciones y quien responde escribe la respuesta. Se corrige con manga ancha (mayúsculas, tildes, erratas pequeñas, basta con el apellido) en `src/answers.js`. Las preguntas de quesito son siempre así; para las demás, quien crea la partida elige en la sala si no hay ninguna, algunas (1 de cada 3) o todas.
+7. Quien dirige la sala (★) puede **expulsar** a cualquier jugador o bot con la ✕ junto a su nombre, en la sala o durante la partida. Quien es expulsado vuelve al inicio y no puede volver a entrar en esa sala.
 
 Atajos: teclas 1–4 para responder, Intro para continuar.
 
