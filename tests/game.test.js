@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {createGame} from '../src/game.js';
 import {QUESTIONS} from '../src/questions.js';
 import {judge, canBeOpen} from '../src/answers.js';
+import {CELLS} from '../public/shared.js';
 
 const FAST = {roll:0, step:0, bot:0, botAnswer:0, botCont:0, botVote:0, away:50, hostAway:50, setupAway:50};
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -26,10 +27,16 @@ async function toQuestion(t) {
   for (let i = 0; i < 20 && t.S().phase !== 'question'; i++) {
     const S = t.S();
     if (S.phase === 'roll') t.g.perform(S.roller, 'roll');
-    else if (S.phase === 'choose') t.g.perform(S.roller, 'dest', S.dests[0]);
+    else if (S.phase === 'choose') t.g.perform(S.roller, 'dest', S.dests.find(c => CELLS[c].type !== 'hq') ?? S.dests[0]);
     await wait(5);
   }
   assert.equal(t.S().phase, 'question');
+}
+// Responde bien o mal, sea con opciones o escribiendo (las de quesito son siempre para escribir).
+function reply(t, pid, right) {
+  const q = t.S().q;
+  if (q.open) t.g.perform(pid, 'answer', {q:q.id, text:right ? q.answer : 'no lo sé'});
+  else t.g.perform(pid, 'answer', {q:q.id, i:right ? q.options.indexOf(q.answer) : q.options.findIndex(o => o !== q.answer)});
 }
 
 test('quien crea la sala la dirige y solo empieza con 2 equipos con gente', () => {
@@ -73,10 +80,9 @@ test('solo tira y responde el jugador al que le toca, y el turno rota dentro del
     for (const p of others) { t.g.perform(p.pid, 'roll'); assert.equal(t.S().phase, 'roll', `${p.pid} no puede tirar`); }
     await toQuestion(t);
     const q = t.S().q;
-    t.g.perform(others[0].pid, 'answer', {q:q.id, i:0});
+    reply(t, others[0].pid, true);
     assert.equal(t.S().q.picked, null, 'otro jugador no puede responder');
-    const wrong = q.options.findIndex(o => o !== q.answer);
-    t.g.perform(roller, 'answer', {q:q.id, i:wrong});
+    reply(t, roller, false);
     t.g.perform(roller, 'cont', q.id);
     assert.notEqual(t.S().turn, turnBefore, 'al fallar pasa el turno');
   }
@@ -91,7 +97,7 @@ test('la respuesta correcta no se envía hasta que se contesta', async () => {
   const pub = t.g.publicState();
   assert.equal(pub.q.answer, undefined);
   assert.equal(pub.decks, undefined);
-  t.g.perform(t.S().roller, 'answer', {q:pub.q.id, i:0});
+  reply(t, t.S().roller, false);
   assert.equal(typeof t.g.publicState().q.answer, 'string');
 });
 
@@ -102,7 +108,7 @@ test('el chat de equipo solo llega a ese equipo y las propuestas a la pregunta a
   const S = t.S(), team = S.turn;
   const mate = S.players.find(p => p.team === team && p.pid !== S.roller);
   t.chats.length = 0;
-  if (mate) {
+  if (mate && !S.q.open) {
     t.g.perform(mate.pid, 'chat', {text:'Yo diría la B'});
     t.g.perform(mate.pid, 'chat', {vote:1, q:S.q.id});
     t.g.perform(S.roller, 'chat', {vote:2, q:S.q.id}); // quien responde no propone
@@ -154,7 +160,7 @@ test('los bots juegan solos', async () => {
     if (S.turn !== botTeam) { // Ane falla para pasar el turno
       if (S.phase === 'roll') t.g.perform('ane', 'roll');
       else if (S.phase === 'choose') t.g.perform('ane', 'dest', S.dests[0]);
-      else if (S.phase === 'question' && S.q.picked === null) t.g.perform('ane', 'answer', {q:S.q.id, i:S.q.options.findIndex(o => o !== S.q.answer)});
+      else if (S.phase === 'question' && S.q.picked === null) reply(t, 'ane', false);
       else if (S.phase === 'question') t.g.perform('ane', 'cont', S.q.id);
     }
     t.g.tick();
@@ -224,7 +230,7 @@ test('preguntas para escribir: no se envían las opciones y se corrige lo escrit
     await toQuestion(t);
     q = t.S().q;
     if (q.open) break;
-    t.g.perform(t.S().roller, 'answer', {q:q.id, i:0}); t.g.perform(t.S().roller, 'cont', q.id);
+    reply(t, t.S().roller, true); t.g.perform(t.S().roller, 'cont', q.id);
   }
   assert.ok(q.open);
   const pub = t.g.publicState();
@@ -258,7 +264,7 @@ test('al fallar, el turno pasa solo al siguiente equipo al cabo de un momento', 
   t.g.perform('ane', 'start');
   await toQuestion(t);
   const team = t.S().turn, q = t.S().q;
-  t.g.perform(t.S().roller, 'answer', {q:q.id, i:q.options.findIndex(o => o !== q.answer)});
+  reply(t, t.S().roller, false);
   assert.ok(t.g.publicState().q.passIn > 0, 'se avisa de cuándo pasa el turno');
   t.g.tick(Date.now() + 1000);
   assert.equal(t.S().turn, team, 'todavía se puede ver la respuesta');
@@ -267,8 +273,24 @@ test('al fallar, el turno pasa solo al siguiente equipo al cabo de un momento', 
   // Si acierta, no pasa nada solo: sigue tirando cuando quiera.
   await toQuestion(t);
   const q2 = t.S().q, team2 = t.S().turn;
-  t.g.perform(t.S().roller, 'answer', {q:q2.id, i:q2.options.indexOf(q2.answer)});
+  reply(t, t.S().roller, true);
   t.g.tick(Date.now() + 60000);
   assert.equal(t.S().turn, team2);
   assert.equal(t.S().phase, 'question');
+});
+
+test('las preguntas de quesito son siempre para escribir, aunque en la sala se elija «Ninguna»', async () => {
+  const t = threePlayers(); // ajuste: ninguna para escribir
+  t.g.perform('ane', 'start');
+  const hq = CELLS.findIndex(c => c.type === 'hq');
+  for (let n = 0; n < 30; n++) {
+    const S = t.S();
+    S.teams[S.turn].pos = (hq - 1 + CELLS.length) % CELLS.length; S.die = 1; S.dests = [hq]; S.phase = 'choose'; S.q = null;
+    t.g.perform(S.roller, 'dest', hq);
+    for (let i = 0; i < 20 && t.S().phase !== 'question'; i++) await wait(2);
+    const q = t.S().q;
+    assert.equal(q.kind, 'wedge');
+    assert.equal(q.open, true);
+    assert.equal(t.g.publicState().q.options, undefined);
+  }
 });

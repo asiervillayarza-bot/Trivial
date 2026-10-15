@@ -240,14 +240,18 @@ export function createGame({hooks, saved = null, times = {}}) {
     }
     ask(c.cat, c.type === 'hq' && !t.wedges[c.cat] ? 'wedge' : 'normal');
   }
-  function draw(cat) {
+  // Saca la siguiente pregunta del mazo; con openOnly, la siguiente que se pueda responder escribiendo.
+  function draw(cat, openOnly) {
     if (!S.decks[cat].length) S.decks[cat] = shuffle(QUESTIONS[cat].map((_, i) => i));
-    return S.decks[cat].pop();
+    const d = S.decks[cat];
+    const j = openOnly ? d.findLastIndex(i => canBeOpen(QUESTIONS[cat][i][1])) : -1;
+    return j >= 0 ? d.splice(j, 1)[0] : d.pop();
   }
   function ask(cat, kind) {
-    const q = QUESTIONS[cat][draw(cat)];
+    const q = QUESTIONS[cat][draw(cat, kind === 'wedge')];
     S.qn++;
-    const open = canBeOpen(q[1]) && (S.openMode === 2 || (S.openMode === 1 && Math.random() < 1 / 3));
+    // Las preguntas de quesito son siempre para escribir; las demás, según el ajuste de la sala.
+    const open = canBeOpen(q[1]) && (kind === 'wedge' || S.openMode === 2 || (S.openMode === 1 && Math.random() < 1 / 3));
     S.q = {id:S.qn, shownAt:Date.now(), cat, kind, text:q[0], options:shuffle(q.slice(1)), answer:q[1], picked:null, open,
            deadline:S.timeLimit ? Date.now() + S.timeLimit * 1000 : null};
     S.phase = 'question';
